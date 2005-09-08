@@ -1,0 +1,13 @@
+MANIFEST
+LICENSE
+README
+Todo
+Changes
+lib/CGI/Ajax.pm
+t/001_load.t
+t/002_load.t
+scripts/pjx_cr.pl
+scripts/pjx_podex.pl
+scripts/pjx_subs.pl
+Makefile.PL
+META.yml                                 Module meta-data (added by MakeMaker)
