@@ -5,12 +5,11 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .31;
+    $VERSION     = .32;
     @ISA         = qw(Class::Accessor);
 }
 
 ########################################### main pod documentation begin ##
-# Below is the stub of documentation for your module. You better edit it!
 
 
 =head1 NAME
@@ -20,8 +19,69 @@ web applications (formerly know as the module CGI::Perljax).
 
 =head1 SYNOPSIS
 
-  use CGI::Ajax;
-  my $pjx = new CGI::Ajax( 'exported_func1' => \&perl_func1 );
+  use CGI::Ajax; # required for all of the following
+
+  1. Standard Method of using CGI::Ajax
+
+  # create the CGI::Ajax object sending in a function name and a
+  # reference to a sub, or an anonymous sub
+  my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
+  my $pjx = new CGI::Ajax( 'exported_func' => $perl_anon_func );
+
+	# send to an exported function the value in an html text box 
+	# with id='input_elem'  and have the result go to 'output' use: 
+  onClick="exported_func(['input_elem'],['output']);"
+
+	#that is all the javascript you'll need. your html element for the
+	#example above must have 'id' i.e.: 
+	# <input type=text id='input_elem'>
+
+  2. Advanced Methods: Multiple input/outputs and renaming parameters
+  # send in parameters from html elements 'input1','input2' and have
+	# the results go to 'result1','result2':
+  onClick="exported_func(['input1','input2'],['result1','result2']);"
+
+  # send in perl variables ($input1,$input2) using the 'args__' keyword:
+  onClick="exported_func([\"args__$input1\",\"args__$input2\"],['out_div']);"
+
+  # send in a constant (42):
+  onClick="exported_func([\"args__42\"],['out_div']);"
+
+
+  3. URL/outside script Method
+
+  # create the CGI::Ajax object sending in a function name and a
+  # url to a local script, where the receiving script uses parameters
+  # from html elements on our page
+  my $url = './outside_script.pl';
+  my $pjx = new CGI::Ajax( 'external' => $url );
+
+	# this will work as before:
+  onClick="external(['input1','input2'],['out_div']);"
+
+  # the outside_script.pl will get the values via: 
+	 $cgi->params('args');  
+
+
+  # rename parameters: 
+  onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],['out_div']);"
+	
+	#retrieve them in an outside script with :
+	#  $cgi->params('myname');  
+	#  $cgi->params('myparam');  
+	#  if sending to a function IN the perljax script, the perljax object
+	#  uses $q->param('args') so not likely a good idea to rename.
+
+  # rename a parameter to 'myparam' but get the value from an html element with div
+	# id of 'input1':
+
+  onClick="exported_func(['myparam__' + getVal('input1')],['out_div']);"
+
+  # N.B. These examples show the use of outside scripts which are other
+  # perl scripts, but you are not limited to perl - it could just as
+  # easily be php or any other cgi script
+
+
 
 =head1 DESCRIPTION
 
@@ -47,12 +107,12 @@ over multiple scripts.
 Other than using the Class::Accessor module to generate CGI::Ajax'
 accessor methods, CGI::Ajax is completely self-contained - it does
 not require you to install a larger package or a full Content
-Management System.
+Management System, etc.
 
 A primary goal of CGI::Ajax is to keep the module streamlined and
 maximally flexible.  We are trying to keep the generated javascript
-code to a minimum, and provide users with a variety of methods for
-deploying CGI::Ajax in their own applications.
+code to a minimum, but still provide users with a variety of methods 
+for deploying CGI::Ajax. And VERY  little user javascript.
 
 
 =head1 USAGE
@@ -114,11 +174,13 @@ prior to creating the CGI::Ajax object, like so:
 
   # create a CGI::Ajax object, and associate our anon code
   # In >= version 0.20 of CGI::Ajax, you can make the associated
-  # code a url to another CGI script.
+  # code a url to another CGI script (as seen in the above synopsis).
 
   my $pjx = new CGI::Ajax( 'evenodd' => \&evenodd_func );
 
-	# print the form sending in the cgi and the HTML function
+	# print the form sending in the cgi and the HTML function.  A cgi
+  # object is only necessary in this scenario because we use the
+  # CGI->header() function
   
   # this outputs the html for the page
   print $pjx->build_html($cgi,\&Show_HTML);
@@ -138,7 +200,7 @@ prior to creating the CGI::Ajax object, like so:
 =item show_javascript()
 
     Purpose: builds the text of all the javascript that needs to be
-             inserted into the calling scripts html header
+             inserted into the calling scripts html <head> section
   Arguments: 
     Returns: javascript text
   Called By: originating web script
@@ -146,6 +208,28 @@ prior to creating the CGI::Ajax object, like so:
              a CGI::Ajax object it will output all the javascript needed
              for the web page.
 
+=cut
+
+=item register()
+
+    Purpose: adds a function name and a code ref to the global coderef
+             hash, after the original object was created
+  Arguments: function name, code reference
+    Returns: none
+  Called By: originating web script
+
+=cut
+
+=item JSDEBUG()
+    Purpose: See the URL that is being generated
+
+  Arguments: JSDEBUG(0); # turn javascript debugging off 
+             JSDEBUG(1); # turn javascript debugging on
+		Returns: prints a link to the url that is being generated automatically by
+		         the Ajax object. this is VERY useful for seeing what
+						 CGI::Ajax is doing. Following the link, will show a page
+						 with the output that the page is generating.
+  Called By: $pjx->JSDEBUG(1) # where $pjx is a CGI::Ajax object;
 =cut
 
 =head1 BUGS
@@ -190,7 +274,7 @@ Class::Accessor, CGI
 ######################################################
 
 
-#=item build_html()
+# sub build_html()
 #
 #    Purpose: associate cgi obj ($q) with pjx object, insert
 #		         javascript into <HEAD></HEAD> element
@@ -198,7 +282,6 @@ Class::Accessor, CGI
 #    Returns: html or updated html (including the header)
 #  Called By: originating cgi script
 #
-#=cut
 
 sub build_html {
   my ( $self, $q, $html_source ) = @_;
@@ -243,7 +326,7 @@ sub build_html {
   return $self->html();
 }
 
-#=item show_javascript()
+# sub show_javascript()
 #
 #    Purpose: builds the text of all the javascript that needs to be
 #             inserted into the calling script's html header
@@ -251,7 +334,6 @@ sub build_html {
 #    Returns: javascript text
 #  Called By: originating web script
 #
-#=cut
 
 sub show_javascript {
   my ($self) = @_;
@@ -261,6 +343,8 @@ sub show_javascript {
   foreach my $func ( keys %{ $self->coderef_list() }, keys %{ $self->url_list() } ) {
     $rv .= $self->make_function($func);
   }
+  # wrap up the return in a CDATA structure for XML compatibility
+  # (thanks Thos Davis)
   $rv = "\n" . '//<![CDATA[' . "\n" . $rv . "\n" . '//]]>' . "\n";
   $rv = '<script type="text/javascript">' . $rv . '</script>';
   return $rv;
@@ -271,12 +355,15 @@ sub new {
   my ($class) = shift;
   my $self = bless ({}, ref ($class) || $class);
   $self->mk_accessors( qw(url_list coderef_list cgi html DEBUG JSDEBUG) );
-  $self->JSDEBUG(0);
-  $self->DEBUG(0);
-  $self->{coderef_list} = {}; #accessorized
-  $self->{url_list} = {}; #accessorized
+  $self->JSDEBUG(0); # turn javascript debugging off (if on,
+                     # extra info will be added to the web page output
+  $self->DEBUG(0);   # turn debugging off (if on, check web logs)
+                    
+  #accessorized attributes
+  $self->{coderef_list} = {};
+  $self->{url_list} = {};
   $self->{html}=undef;
-  $self->{cgi}= undef; #accessorized
+  $self->{cgi}= undef;
 
   if ( @_ < 2 ) {
     die "incorrect usage: must have fn=>code pairs in new\n";
@@ -307,7 +394,7 @@ sub new {
 ## METHODS - private                                ##
 ######################################################
 
-#=item show_common_js()
+# sub show_common_js()
 #
 #    Purpose: create text of the javascript needed to interface with
 #             the perl functions
@@ -315,7 +402,6 @@ sub new {
 #    Returns: text of common javascript subroutine, 'do_http_request'
 #  Called By: originating cgi script, or build_html()
 #
-#=cut
 
 sub show_common_js {
   my $self = shift;
@@ -371,10 +457,10 @@ pjx.prototype.perl_do=function() {
 handleReturn =	function() {
 	if ( r.readyState!= 4) { return; }
 	var data = r.responseText.split(/__pjx__/);
-	if(dt.constructor != Array){dt=[dt];}
-	if(data.constructor != Array){data=[data];}
+	if (dt.constructor != Array) { dt=[dt]; }
+	if (data.constructor != Array) { data=[data]; }
 	if (typeof(dt[0])!='function') {
-    for(var i=0;i<dt.length;i++){ 		
+    for ( var i=0; i<dt.length; i++ ) { 		
 			var div = document.getElementById(dt[i]);
 			if (div.type=='text') {
 				div.value=data[i];
@@ -383,7 +469,7 @@ handleReturn =	function() {
 			}
 		}
 	} else if (typeof(dt[0])=='function') {
-			eval(dt[0](data));
+    eval(dt[0](data));
 	}
 } 
 
@@ -391,7 +477,7 @@ handleReturn =	function() {
 pjx.prototype.getURL=function(fname){
   args = this.args;
   url= 'fname=' + fname;
-  for(i=0;i<args.length;i++){
+  for (i=0;i<args.length;i++) {
     url=url + args[i];
   }
   return url;
@@ -411,16 +497,17 @@ EOT
   return $rv;
 }
 
-#=item insert_js_in_head()
+# sub insert_js_in_head()
 #
 #    Purpose: searches the html value in the CGI::Ajax object and inserts
 #             the ajax javascript code in the <script></script> section,
-#             or if no such section exists, then it creates it.
+#             or if no such section exists, then it creates it.  If
+#             JSDEBUG is set, then an extra div will be added and the
+#             url wil be desplayed as a link
 #  Arguments: none
 #    Returns: none
 #  Called By: build_html()
 #
-#=cut
 
 sub insert_js_in_head{
   my $self = shift;
@@ -428,22 +515,36 @@ sub insert_js_in_head{
 	my $newhtml;
 	my @shtml;
 	my $js = $self->show_javascript();
-	if($self->JSDEBUG()){
-	  my $showurl=qq|<br /><div id='__pjxrequest'></div><br/>|;
+
+	if ( $self->JSDEBUG() ) {
+	  my $showurl=qq!<br /><div id='__pjxrequest'></div><br/>!;
+    # find the terminal </body> so we can insert just before it
 		my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
 		$mhtml = $splith[0].$showurl.$splith[1].$splith[2];
 	}
+
+  # see if we can match on </head>
   @shtml= $mhtml =~ /(.*)(<\s*\/\s*head\s*>)(.*)/is;
-	if(@shtml){
+	if ( @shtml ) {
+    # yes, there's already a <head></head>, so let's insert inside it,
+    # at the end
     $newhtml = $shtml[0].$js.$shtml[1].$shtml[2];
 	} elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
+    # there's no <head>, so look for the <html> tag, and insert out
+    # javascript inside that tag
     $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
-	}
+	} else {
+    $newhtml .= "<html><head>";
+    $newhtml .= $js;
+    $newhtml .= "</head><body>";
+    $newhtml .= "No head/html tags, nowhere to insert.  Returning javascript anyway<br>";
+    $newhtml .= "</body></html>";
+  }
 	$self->html($newhtml);
 	return;
 }
 
-#=item handle_request()
+# sub handle_request()
 #
 #    Purpose: makes sure a fname function name was set in the CGI
 #             object, and then tries to eval the function with
@@ -454,7 +555,6 @@ sub insert_js_in_head{
 #             method, then join then with a connector (__pjx__).
 #  Called By: build_html()
 #
-#=cut
 
 sub handle_request {
   my ($self) = shift;
@@ -479,6 +579,14 @@ sub handle_request {
     if ( ref($code) eq "CODE" ) {
       eval { ($result, @other) = $code->( $self->cgi()->param("args") ) };
 
+      if ($@) {
+        # see if the eval caused and error and report it
+        # Should we be more severe and die?
+        if ( $self->DEBUG() ) {
+          print STDERR "Problem with code: $@\n";
+        }
+      }
+
       if( @other ) {
           $rv .= join( "__pjx__", ($result, @other) );
           if ( $self->DEBUG() ) {
@@ -490,13 +598,6 @@ sub handle_request {
         } 
       }
 
-      if ($@) {
-        # see if the eval caused and error and report it
-        # Should we be more severe and die?
-        if ( $self->DEBUG() ) {
-          print STDERR "Problem with code: $@\n";
-        }
-      }
     } # end if ref = CODE
   } else {
     $rv .= "$func_name is not defined!";
@@ -505,7 +606,7 @@ sub handle_request {
 }
 
 
-#=item make_function()
+# sub make_function()
 #
 #    Purpose: creates the javascript wrapper for the underlying perl
 #             subroutine
@@ -516,16 +617,15 @@ sub handle_request {
 #  Called By: show_javascript; called once for each registered perl
 #             subroutine
 #
-#=cut
 
 sub make_function {
   my ($self, $func_name ) = @_;
   return("") if not defined $func_name;
   return("") if $func_name eq "";
   my $rv = "";
-	my $outside_url = $self->url_list()->{$func_name};
-	if(not defined $outside_url){$outside_url = 0;}
-  my $jsdebug = $self->JSDEBUG();
+	my $outside_url = $self->url_list()->{ $func_name };
+	if (not defined $outside_url) { $outside_url = 0; }
+  my $jsdebug = $self->JSDEBUG(); # set $jsdebug for interpolating into HERE document
 
   #create the javascript text
   $rv .= <<EOT;
@@ -536,17 +636,17 @@ function $func_name() {
 	  args[0][i] = fnsplit(args[0][i]);
   }
   var pjx_obj = new pjx(args,"$func_name");
-	var amp = '?';
+	var sep = '?';
 	if ( \'$outside_url\' == '0') {
 	  if(window.location.toString().indexOf('?')!=-1){
-		  amp = '&';
+		  sep = '&';
 		}
-	  pjx_obj.url = window.location + amp + pjx_obj.url;
+	  pjx_obj.url = window.location + sep + pjx_obj.url;
 	} else {
 	  if(window.location.toString().indexOf('?')!=-1){
-		  amp = '&';
+		  sep = '&';
 		}
-	  pjx_obj.url = \'$outside_url\' + amp +  pjx_obj.url;
+	  pjx_obj.url = \'$outside_url\' + sep +  pjx_obj.url;
 	}
 	
   var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + pjx_obj.url + ' </a>';
@@ -562,14 +662,13 @@ EOT
  return $rv;
 }
 
-#=item Subroutine: register()
+# sub Subroutine: register()
 #
 #    Purpose: adds a function name and a code ref to the global coderef hash
 #  Arguments: function name, code reference
 #    Returns: none
 #  Called By: originating web script
 #
-#=cut
 
 sub register {
   my ( $self, $fn, $coderef ) = @_;
