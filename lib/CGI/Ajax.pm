@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .32;
+    $VERSION     = .37;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -406,9 +406,10 @@ sub new {
 sub show_common_js {
   my $self = shift;
   my $rv = <<EOT;
+
 function pjx(args,fname){
   this.dt=args[1];
-  this.args=args[0]
+  this.args=args[0];
   this.req=ghr();
   this.url = this.getURL(fname);
 }
@@ -452,7 +453,7 @@ pjx.prototype.perl_do=function() {
   r.open("GET",url,true);
   r.onreadystatechange=handleReturn;
   r.send(null);
-}
+};
 
 handleReturn =	function() {
 	if ( r.readyState!= 4) { return; }
@@ -471,7 +472,7 @@ handleReturn =	function() {
 	} else if (typeof(dt[0])=='function') {
     eval(dt[0](data));
 	}
-} 
+};
 
 
 pjx.prototype.getURL=function(fname){
@@ -481,11 +482,11 @@ pjx.prototype.getURL=function(fname){
     url=url + args[i];
   }
   return url;
-}
+};
 
 function ghr() {
   if ( typeof ActiveXObject!="undefined" ) {
-    try { return new ActiveXObject("Microsoft.XMLHTTP") }
+    try { return new ActiveXObject("Microsoft.XMLHTTP"); }
     catch(a) { }
   }
   if ( typeof XMLHttpRequest!="undefined" ) {
@@ -494,8 +495,41 @@ function ghr() {
   return null;
 }
 EOT
-  return $rv;
+
+  my $sig = <<EOS;
+//
+// created by:
+// Brian C. Thomas bct.x42\@gmail.com
+// Brent Pedersen bpederse\@gmail.com
+// distributed under the Perl Artistic license
+// See LICENSE file included
+//
+EOS
+
+  $rv = $self->compress_js($rv);
+
+  return($sig . $rv);
 }
+
+# sub compress_js()
+#
+#    Purpose: searches the javascript for newlines and spaces and
+#             removes them (if a newline) or shrinks them to a single (if
+#             space).
+#  Arguments: javascript to compress
+#    Returns: compressed js string
+#  Called By: show_common_js(), 
+#
+
+sub compress_js {
+  my($self,$js) = @_;
+  return if not defined $js;
+  return if $js eq "";
+  $js =~ s/\n//g;   # drop newlines
+  $js =~ s/\s+/ /g; # replace 1+ spaces with just one space
+  return $js;
+}
+
 
 # sub insert_js_in_head()
 #
@@ -658,8 +692,11 @@ function $func_name() {
 EOT
 # make sure 'EOT' is at the left margin if you copy and paste
 # this code. 
-
- return $rv;
+ 
+  if ( not $self->JSDEBUG() ) {
+    $rv = $self->compress_js($rv);
+  }
+  return $rv;
 }
 
 # sub Subroutine: register()
