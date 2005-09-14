@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .37;
+    $VERSION     = .38;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -429,7 +429,7 @@ function getVal(id) {
         return document.getElementById(id).innerHTML.toString();
       } catch(e) {
         var errstr = 'ERROR: cant get html element with id:' +
-        id + 'check that an element with id=' + id + ' exists';
+        id + '.  Check that an element with id=' + id + ' exists';
         alert(errstr);return false;
       }
     }
@@ -463,7 +463,7 @@ handleReturn =	function() {
 	if (typeof(dt[0])!='function') {
     for ( var i=0; i<dt.length; i++ ) { 		
 			var div = document.getElementById(dt[i]);
-			if (div.type=='text') {
+			if (div.type=='text' || div.type=='textarea') {
 				div.value=data[i];
 			} else {
 				div.innerHTML = data[i];
