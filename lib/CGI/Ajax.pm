@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .38;
+    $VERSION     = .43;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -184,6 +184,7 @@ prior to creating the CGI::Ajax object, like so:
   
   # this outputs the html for the page
   print $pjx->build_html($cgi,\&Show_HTML);
+
 
 =head1 METHODS
 
@@ -407,9 +408,10 @@ sub show_common_js {
   my $self = shift;
   my $rv = <<EOT;
 
-function pjx(args,fname){
+function pjx(args,fname,method){
   this.dt=args[1];
   this.args=args[0];
+	this.method=method;
   this.req=ghr();
   this.url = this.getURL(fname);
 }
@@ -450,9 +452,21 @@ pjx.prototype.perl_do=function() {
   r = this.req;
   dt=this.dt;
   url=this.url;
-  r.open("GET",url,true);
-  r.onreadystatechange=handleReturn;
-  r.send(null);
+	var pd ='';
+	if(this.method=="POST"){
+		var tmp = url.split(/\\\?/);
+		url = tmp[0];
+		pd = tmp[1];
+	}
+	r.open(this.method,url,true);
+	if(this.method=="POST"){
+		r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+		r.send(pd);
+	}
+	r.onreadystatechange=handleReturn;
+	if(this.method=="GET"){
+	  r.send(null);
+	}
 };
 
 handleReturn =	function() {
@@ -463,14 +477,14 @@ handleReturn =	function() {
 	if (typeof(dt[0])!='function') {
     for ( var i=0; i<dt.length; i++ ) { 		
 			var div = document.getElementById(dt[i]);
-			if (div.type=='text' || div.type=='textarea') {
+			if(div.type =='text' || div.type=='textarea'){
 				div.value=data[i];
-			} else {
+      } else{
 				div.innerHTML = data[i];
-			}
+	  	} 
 		}
-	} else if (typeof(dt[0])=='function') {
-    eval(dt[0](data));
+	}	else if (typeof(dt[0])=='function') {
+	  eval(dt[0](data));
 	}
 };
 
@@ -669,7 +683,11 @@ function $func_name() {
   for( i=0; i<args[0].length;i++ ) {
 	  args[0][i] = fnsplit(args[0][i]);
   }
-  var pjx_obj = new pjx(args,"$func_name");
+	method="GET";
+	if(args.length==3){
+	  if(args[2]=="POST" || args[2] =="post"){method="POST"}
+	}
+  var pjx_obj = new pjx(args,"$func_name",method);
 	var sep = '?';
 	if ( \'$outside_url\' == '0') {
 	  if(window.location.toString().indexOf('?')!=-1){
