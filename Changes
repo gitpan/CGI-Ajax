@@ -1,6 +1,53 @@
 Revision history for Perl module CGI::Perljax
 
 .26 Fri Aug 26 08:07:24 2005
-    - original version; created by ExtUtils::ModuleMaker 0.36
+  original version; created by ExtUtils::ModuleMaker 0.36
 
+.27
+  removed Perljax.pm
+
+
+.28 2005-09-07 10:14:54 Wed, 07 Sep 2005
+  the user can now send in static parameters on the function call:
+  the fnargs has been renamed to 'args'
+  the user can use a parameter as :
+  onclick=(['args__1234','div'],['result'])
+  which will form the url  &args=1234&args=valueindiv
+  can also rename parameters via:
+  onclick=(['parname__'+getVal('div')],['result'])
+  which will for the url:   &parname=valueindiv
+  this is useful for sending to outside scripts which may not use 'args'
+    as the cgi parameter name.
+  renamed getElem to getVal
+
+
+
+.32 2005-09-08 14:49:29 Thu, 08 Sep 2005
+  the url will now be appended to
+  so if get parameters are on the initial url, they can be used in the
+  registered ajax function
+  Lot's of documentation and some code restructures.
+  Set CPAN version to 0.32
+
+
+.37 2005-09-12 10:41:13 Mon, 12 Sep 2005
+  changed perldoc some.
+  Added newline/space compresson to show_common_js().
+  Fixed anonymous javascript functions to have semicolons after
+  definition.
+  Added JSDEBUG triggered compression of user-exported javascript
+  wrapper functions.  If JSBEDUG is on, the don't compress, otherwise
+  compress
+  Incremented CPAN version to 0.37
+
+.43 2005-09-22 09:00:09 Thu, 22 Sep 2005
+  Fixed missing space in a javascript warning message when an HTML
+  element id wasn't defined.
+  Fixed bug in js code to support 'textarea' fields as well as 'test'
+  can now use POST variables!! no url limit
+  can take POST variables, previous addition was still broken.
+  updated POST methods in javascript
+  incremented version string to .43 - POD touchups
+  added new example showing multiple returns to a page
+    (pjx_manyret.pl, in scripts/ dir)
 
