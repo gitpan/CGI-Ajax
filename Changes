@@ -51,3 +51,18 @@ Revision history for Perl module CGI::Perljax
   added new example showing multiple returns to a page
     (pjx_manyret.pl, in scripts/ dir)
 
+.46 2005-09-28 14:10:08 -0700 Wed, 28 Sep 2005
+  Added a new example script to show using select boxes, which change
+  the value of other select boxes based on what was selected.
+
+.47 2005-09-28 16:49:31 -0700 Wed, 28 Sep 2005
+  added support for multiple select boxes after bug report from
+  aztecpawn on sourceforge.net.  Now the common javascript will return
+  an array of values if there was a multiple selection in a select box
+
+.49 2005-09-29 08:36:37 -0700 Thu, 29 Sep 2005
+  Fixed broken fnsplit so it wouldn't split strings.  Restructured
+  javascript code for spaces and indents.  Need to give Brent my
+  vimrc to prevent real tab chars from coming through.  Removed
+  all tab chars and replaced with spaces.  Made lots of changes
+  to pjx_combo.pl to better document and organize the html layout.

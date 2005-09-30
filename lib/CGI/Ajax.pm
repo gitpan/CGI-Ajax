@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .43;
+    $VERSION     = .49;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -28,17 +28,17 @@ web applications (formerly know as the module CGI::Perljax).
   my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
   my $pjx = new CGI::Ajax( 'exported_func' => $perl_anon_func );
 
-	# send to an exported function the value in an html text box 
-	# with id='input_elem'  and have the result go to 'output' use: 
+  # send to an exported function the value in an html text box
+  # with id='input_elem'  and have the result go to 'output' use:
   onClick="exported_func(['input_elem'],['output']);"
 
-	#that is all the javascript you'll need. your html element for the
-	#example above must have 'id' i.e.: 
-	# <input type=text id='input_elem'>
+  #that is all the javascript you'll need. your html element for the
+  #example above must have 'id' i.e.:
+  # <input type=text id='input_elem'>
 
   2. Advanced Methods: Multiple input/outputs and renaming parameters
   # send in parameters from html elements 'input1','input2' and have
-	# the results go to 'result1','result2':
+  # the results go to 'result1','result2':
   onClick="exported_func(['input1','input2'],['result1','result2']);"
 
   # send in perl variables ($input1,$input2) using the 'args__' keyword:
@@ -56,24 +56,24 @@ web applications (formerly know as the module CGI::Perljax).
   my $url = './outside_script.pl';
   my $pjx = new CGI::Ajax( 'external' => $url );
 
-	# this will work as before:
+  # this will work as before:
   onClick="external(['input1','input2'],['out_div']);"
 
-  # the outside_script.pl will get the values via: 
-	 $cgi->params('args');  
+  # the outside_script.pl will get the values via:
+   $cgi->params('args');
 
 
-  # rename parameters: 
+  # rename parameters:
   onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],['out_div']);"
-	
-	#retrieve them in an outside script with :
-	#  $cgi->params('myname');  
-	#  $cgi->params('myparam');  
-	#  if sending to a function IN the perljax script, the perljax object
-	#  uses $q->param('args') so not likely a good idea to rename.
+
+  #retrieve them in an outside script with :
+  #  $cgi->params('myname');
+  #  $cgi->params('myparam');
+  #  if sending to a function IN the perljax script, the perljax object
+  #  uses $q->param('args') so not likely a good idea to rename.
 
   # rename a parameter to 'myparam' but get the value from an html element with div
-	# id of 'input1':
+  # id of 'input1':
 
   onClick="exported_func(['myparam__' + getVal('input1')],['out_div']);"
 
@@ -111,7 +111,7 @@ Management System, etc.
 
 A primary goal of CGI::Ajax is to keep the module streamlined and
 maximally flexible.  We are trying to keep the generated javascript
-code to a minimum, but still provide users with a variety of methods 
+code to a minimum, but still provide users with a variety of methods
 for deploying CGI::Ajax. And VERY  little user javascript.
 
 
@@ -124,11 +124,11 @@ prior to creating the CGI::Ajax object, like so:
   use CGI::Ajax;
   use CGI;
 
-  # define a normal perl subroutine that you want available 
+  # define a normal perl subroutine that you want available
 
     sub evenodd_func {
     my $input = shift;
-    
+
     # see if input is defined
     if ( not defined $input ) {
       return("input not defined or NaN");
@@ -178,10 +178,10 @@ prior to creating the CGI::Ajax object, like so:
 
   my $pjx = new CGI::Ajax( 'evenodd' => \&evenodd_func );
 
-	# print the form sending in the cgi and the HTML function.  A cgi
+  # print the form sending in the cgi and the HTML function.  A cgi
   # object is only necessary in this scenario because we use the
   # CGI->header() function
-  
+
   # this outputs the html for the page
   print $pjx->build_html($cgi,\&Show_HTML);
 
@@ -191,7 +191,7 @@ prior to creating the CGI::Ajax object, like so:
 =item build_html()
 
     Purpose: associate cgi obj ($cgi) with pjx object, insert
-		         javascript into <HEAD></HEAD> element
+             javascript into <HEAD></HEAD> element
   Arguments: either a coderef, or a string containing html
     Returns: html or updated html (including the header)
   Called By: originating cgi script
@@ -202,7 +202,7 @@ prior to creating the CGI::Ajax object, like so:
 
     Purpose: builds the text of all the javascript that needs to be
              inserted into the calling scripts html <head> section
-  Arguments: 
+  Arguments:
     Returns: javascript text
   Called By: originating web script
        Note: This method is also overridden so when you just print
@@ -224,12 +224,12 @@ prior to creating the CGI::Ajax object, like so:
 =item JSDEBUG()
     Purpose: See the URL that is being generated
 
-  Arguments: JSDEBUG(0); # turn javascript debugging off 
+  Arguments: JSDEBUG(0); # turn javascript debugging off
              JSDEBUG(1); # turn javascript debugging on
-		Returns: prints a link to the url that is being generated automatically by
-		         the Ajax object. this is VERY useful for seeing what
-						 CGI::Ajax is doing. Following the link, will show a page
-						 with the output that the page is generating.
+    Returns: prints a link to the url that is being generated automatically by
+             the Ajax object. this is VERY useful for seeing what
+             CGI::Ajax is doing. Following the link, will show a page
+             with the output that the page is generating.
   Called By: $pjx->JSDEBUG(1) # where $pjx is a CGI::Ajax object;
 =cut
 
@@ -238,14 +238,14 @@ prior to creating the CGI::Ajax object, like so:
 =head1 SUPPORT
 
 Check out the sourceforge discussion lists at:
-  
+
   http://www.sourceforge.net/projects/pjax
 
 =head1 AUTHORS
 
-	Brian C. Thomas     Brent Pedersen
-	CPAN ID: BCT
-	bct.x42@gmail.com   bpederse@gmail.com
+  Brian C. Thomas     Brent Pedersen
+  CPAN ID: BCT
+  bct.x42@gmail.com   bpederse@gmail.com
 
 =head1 A NOTE ABOUT THE MODULE NAME
 
@@ -278,7 +278,7 @@ Class::Accessor, CGI
 # sub build_html()
 #
 #    Purpose: associate cgi obj ($q) with pjx object, insert
-#		         javascript into <HEAD></HEAD> element
+#            javascript into <HEAD></HEAD> element
 #  Arguments: either a coderef, or a string containing html
 #    Returns: html or updated html (including the header)
 #  Called By: originating cgi script
@@ -309,7 +309,7 @@ sub build_html {
         # there was a problem evaluating the html-generating function
         # that was sent in, so generate an error page
         $html = $self->cgi()->header();
-        $html .= qq!<html><body><h2>Problems</h2> with 
+        $html .= qq!<html><body><h2>Problems</h2> with
           the html-generating function sent to CGI::Ajax
           object</body></html>!;
         return $html;
@@ -331,7 +331,7 @@ sub build_html {
 #
 #    Purpose: builds the text of all the javascript that needs to be
 #             inserted into the calling script's html header
-#  Arguments: 
+#  Arguments:
 #    Returns: javascript text
 #  Called By: originating web script
 #
@@ -359,7 +359,7 @@ sub new {
   $self->JSDEBUG(0); # turn javascript debugging off (if on,
                      # extra info will be added to the web page output
   $self->DEBUG(0);   # turn debugging off (if on, check web logs)
-                    
+
   #accessorized attributes
   $self->{coderef_list} = {};
   $self->{url_list} = {};
@@ -384,12 +384,12 @@ sub new {
       if ( $self->DEBUG() ) {
         print STDERR "Setting function $function_name to url $code\n";
       }
-			# if it's a url, it is added here 
+      # if it's a url, it is added here
       $self->url_list()->{ $function_name } = $code;
     }
   }
   return ($self);
-} 
+}
 
 ######################################################
 ## METHODS - private                                ##
@@ -408,88 +408,101 @@ sub show_common_js {
   my $self = shift;
   my $rv = <<EOT;
 
-function pjx(args,fname,method){
+function pjx(args,fname,method) {
   this.dt=args[1];
   this.args=args[0];
-	this.method=method;
+  this.method=method;
   this.req=ghr();
   this.url = this.getURL(fname);
 }
 
 function getVal(id) {
-  if(typeof id != 'string'){ return id; }
+  if (id.constructor == Function ) { return id; }
+  if (typeof id != 'string') { return id; }
+  var element = document.getElementById(id);
+  if (element.type == 'select-multiple') {
+  var ans = new Array();
+    for (i=0;i<element.length;i++) {
+      if (element[i].selected) {
+        ans.push(element[i].value);
+      }
+    }
+    return ans;
+  }
+
   try {
-    return document.getElementById(id).value.toString();
+    return element.value.toString();
   } catch(e) {
-    try { 
-      return document.getElementById(id).innerHTML.toString();
+    try {
+      return element.innerHTML.toString();
     } catch(e) {
-      if (id.constructor == Function ) {
-        return id;
-      }
-      try {
-        return document.getElementById(id).innerHTML.toString();
-      } catch(e) {
-        var errstr = 'ERROR: cant get html element with id:' +
-        id + '.  Check that an element with id=' + id + ' exists';
-        alert(errstr);return false;
-      }
+      var errstr = 'ERROR: cant get html element with id:' +
+      id + '.  Check that an element with id=' + id + ' exists';
+      alert(errstr);
+      return false;
     }
   }
 }
 
-function fnsplit(arg){
-  var arg2;
-	if(arg.indexOf('__')!=-1){
-		var arg2 =  '&' + (arg.split(/__/).join('='));
-	}else{
-		arg2 = '&args=' + getVal(arg);
-	}
-	return arg2;
+function fnsplit(arg) {
+  var arg2="";
+  if (arg.indexOf('__') != -1) {
+    arg2 += '&' + (arg.split(/__/).join('='));
+  } else {
+    var ans = getVal(arg);
+    if ( typeof ans != 'string' ) {
+      for (i=0;i < ans.length;i++) {
+        arg2 += '&args=' + ans[i];
+      }
+    } else {
+      arg2 += '&args=' + ans;
+    }
+  }
+  return arg2;
 }
 
 pjx.prototype.perl_do=function() {
   r = this.req;
   dt=this.dt;
   url=this.url;
-	var pd ='';
-	if(this.method=="POST"){
-		var tmp = url.split(/\\\?/);
-		url = tmp[0];
-		pd = tmp[1];
-	}
-	r.open(this.method,url,true);
-	if(this.method=="POST"){
-		r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		r.send(pd);
-	}
-	r.onreadystatechange=handleReturn;
-	if(this.method=="GET"){
-	  r.send(null);
-	}
+  var pd ='';
+  if(this.method=="POST"){
+    var tmp = url.split(/\\\?/);
+    url = tmp[0];
+    pd = tmp[1];
+  }
+  r.open(this.method,url,true);
+  if(this.method=="POST"){
+    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    r.send(pd);
+  }
+  r.onreadystatechange=handleReturn;
+  if(this.method=="GET"){
+    r.send(null);
+  }
 };
 
-handleReturn =	function() {
-	if ( r.readyState!= 4) { return; }
-	var data = r.responseText.split(/__pjx__/);
-	if (dt.constructor != Array) { dt=[dt]; }
-	if (data.constructor != Array) { data=[data]; }
-	if (typeof(dt[0])!='function') {
-    for ( var i=0; i<dt.length; i++ ) { 		
-			var div = document.getElementById(dt[i]);
-			if(div.type =='text' || div.type=='textarea'){
-				div.value=data[i];
+handleReturn = function() {
+  if ( r.readyState!= 4) { return; }
+  var data = r.responseText.split(/__pjx__/);
+  if (dt.constructor != Array) { dt=[dt]; }
+  if (data.constructor != Array) { data=[data]; }
+  if (typeof(dt[0])!='function') {
+    for ( var i=0; i<dt.length; i++ ) {
+      var div = document.getElementById(dt[i]);
+      if(div.type =='text' || div.type=='textarea'){
+        div.value=data[i];
       } else{
-				div.innerHTML = data[i];
-	  	} 
-		}
-	}	else if (typeof(dt[0])=='function') {
-	  eval(dt[0](data));
-	}
+        div.innerHTML = data[i];
+      }
+    }
+  } else if (typeof(dt[0])=='function') {
+    eval(dt[0](data));
+  }
 };
 
 
-pjx.prototype.getURL=function(fname){
+pjx.prototype.getURL=function(fname) {
   args = this.args;
   url= 'fname=' + fname;
   for (i=0;i<args.length;i++) {
@@ -532,7 +545,7 @@ EOS
 #             space).
 #  Arguments: javascript to compress
 #    Returns: compressed js string
-#  Called By: show_common_js(), 
+#  Called By: show_common_js(),
 #
 
 sub compress_js {
@@ -559,37 +572,37 @@ sub compress_js {
 
 sub insert_js_in_head{
   my $self = shift;
-	my $mhtml = $self->html();
-	my $newhtml;
-	my @shtml;
-	my $js = $self->show_javascript();
+  my $mhtml = $self->html();
+  my $newhtml;
+  my @shtml;
+  my $js = $self->show_javascript();
 
-	if ( $self->JSDEBUG() ) {
-	  my $showurl=qq!<br /><div id='__pjxrequest'></div><br/>!;
+  if ( $self->JSDEBUG() ) {
+    my $showurl=qq!<br /><div id='__pjxrequest'></div><br/>!;
     # find the terminal </body> so we can insert just before it
-		my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
-		$mhtml = $splith[0].$showurl.$splith[1].$splith[2];
-	}
+    my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
+    $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
+  }
 
   # see if we can match on </head>
   @shtml= $mhtml =~ /(.*)(<\s*\/\s*head\s*>)(.*)/is;
-	if ( @shtml ) {
+  if ( @shtml ) {
     # yes, there's already a <head></head>, so let's insert inside it,
     # at the end
     $newhtml = $shtml[0].$js.$shtml[1].$shtml[2];
-	} elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
+  } elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
     # there's no <head>, so look for the <html> tag, and insert out
     # javascript inside that tag
     $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
-	} else {
+  } else {
     $newhtml .= "<html><head>";
     $newhtml .= $js;
     $newhtml .= "</head><body>";
     $newhtml .= "No head/html tags, nowhere to insert.  Returning javascript anyway<br>";
     $newhtml .= "</body></html>";
   }
-	$self->html($newhtml);
-	return;
+  $self->html($newhtml);
+  return;
 }
 
 # sub handle_request()
@@ -606,14 +619,14 @@ sub insert_js_in_head{
 
 sub handle_request {
   my ($self) = shift;
-	
+
   my $rv = $self->cgi()->header();
   my $result; # $result takes the output of the function, if it's an
               # array split on __pjx__
   my @other = (); # array for catching extra parameters
 
   # make sure "fname" was set in the form from the web page
-  return undef unless defined $self->cgi();	
+  return undef unless defined $self->cgi();
   #return undef unless defined $self->cgi()->param("fname");
 
   # get the name of the function
@@ -622,7 +635,7 @@ sub handle_request {
   # check if the function name was created
   if ( defined $self->coderef_list()->{$func_name} ) {
     my $code = $self->coderef_list()->{$func_name};
-    
+
     # eval the code from the coderef, and append the output to $rv
     if ( ref($code) eq "CODE" ) {
       eval { ($result, @other) = $code->( $self->cgi()->param("args") ) };
@@ -643,12 +656,12 @@ sub handle_request {
       } else {
         if ( defined $result ) {
           $rv .= $result;
-        } 
+        }
       }
 
     } # end if ref = CODE
   } else {
-    $rv .= "$func_name is not defined!";
+    $rv .= "CGI::Ajax - $func_name is not defined!";
   }
   return $rv;
 }
@@ -671,8 +684,8 @@ sub make_function {
   return("") if not defined $func_name;
   return("") if $func_name eq "";
   my $rv = "";
-	my $outside_url = $self->url_list()->{ $func_name };
-	if (not defined $outside_url) { $outside_url = 0; }
+  my $outside_url = $self->url_list()->{ $func_name };
+  if (not defined $outside_url) { $outside_url = 0; }
   my $jsdebug = $self->JSDEBUG(); # set $jsdebug for interpolating into HERE document
 
   #create the javascript text
@@ -681,36 +694,34 @@ sub make_function {
 function $func_name() {
   var args = $func_name.arguments;
   for( i=0; i<args[0].length;i++ ) {
-	  args[0][i] = fnsplit(args[0][i]);
+    args[0][i] = fnsplit(args[0][i]);
   }
-	method="GET";
-	if(args.length==3){
-	  if(args[2]=="POST" || args[2] =="post"){method="POST"}
-	}
+  method="GET";
+  if(args.length==3){
+    if(args[2]=="POST" || args[2] =="post") { method="POST" }
+  }
   var pjx_obj = new pjx(args,"$func_name",method);
-	var sep = '?';
-	if ( \'$outside_url\' == '0') {
-	  if(window.location.toString().indexOf('?')!=-1){
-		  sep = '&';
-		}
-	  pjx_obj.url = window.location + sep + pjx_obj.url;
-	} else {
-	  if(window.location.toString().indexOf('?')!=-1){
-		  sep = '&';
-		}
-	  pjx_obj.url = \'$outside_url\' + sep +  pjx_obj.url;
-	}
-	
+  var sep = '?';
+  if ( \'$outside_url\' == '0') {
+    if(window.location.toString().indexOf('?')!=-1) {
+      sep = '&';
+    }
+    pjx_obj.url = window.location + sep + pjx_obj.url;
+  } else {
+    if(window.location.toString().indexOf('?')!=-1) {
+      sep = '&';
+    }
+    pjx_obj.url = \'$outside_url\' + sep +  pjx_obj.url;
+  }
+
   var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + pjx_obj.url + ' </a>';
   pjx_obj.perl_do();
-	if ($jsdebug) {
-	  document.getElementById('__pjxrequest').innerHTML = tmp;
-	}
+  if ($jsdebug) {
+    document.getElementById('__pjxrequest').innerHTML = tmp;
+  }
 }
 EOT
-# make sure 'EOT' is at the left margin if you copy and paste
-# this code. 
- 
+
   if ( not $self->JSDEBUG() ) {
     $rv = $self->compress_js($rv);
   }
