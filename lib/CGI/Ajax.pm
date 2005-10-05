@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .49;
+    $VERSION     = .52;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -19,79 +19,43 @@ web applications (formerly know as the module CGI::Perljax).
 
 =head1 SYNOPSIS
 
-  use CGI::Ajax; # required for all of the following
-
-  1. Standard Method of using CGI::Ajax
-
-  # create the CGI::Ajax object sending in a function name and a
-  # reference to a sub, or an anonymous sub
+  use CGI;
+  use CGI::Ajax;
   my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
-  my $pjx = new CGI::Ajax( 'exported_func' => $perl_anon_func );
+  $pjx->build_html( $cgi, \&Show_HTML);
 
-  # send to an exported function the value in an html text box
-  # with id='input_elem'  and have the result go to 'output' use:
-  onClick="exported_func(['input_elem'],['output']);"
+  sub perl_func {
+    my $input = shift;
+    # do something with $input
+    return( $output );
+  }
 
-  #that is all the javascript you'll need. your html element for the
-  #example above must have 'id' i.e.:
-  # <input type=text id='input_elem'>
+  sub Show_HTML {
+    my $html = <<EOHTML;
+    <HTML>
+    <BODY>
+      Enter something: 
+        <input type="text" name="val1" id="val1"
+         onkeyup="exported_func( ['val1'], ['resultdiv'] ); return true;"><br>
+      <div id="resultdiv"></div>
+    </BODY>
+    </HTML>
+    EOHTML
+    return $html;
+  }
 
-  2. Advanced Methods: Multiple input/outputs and renaming parameters
-  # send in parameters from html elements 'input1','input2' and have
-  # the results go to 'result1','result2':
-  onClick="exported_func(['input1','input2'],['result1','result2']);"
-
-  # send in perl variables ($input1,$input2) using the 'args__' keyword:
-  onClick="exported_func([\"args__$input1\",\"args__$input2\"],['out_div']);"
-
-  # send in a constant (42):
-  onClick="exported_func([\"args__42\"],['out_div']);"
-
-
-  3. URL/outside script Method
-
-  # create the CGI::Ajax object sending in a function name and a
-  # url to a local script, where the receiving script uses parameters
-  # from html elements on our page
-  my $url = './outside_script.pl';
-  my $pjx = new CGI::Ajax( 'external' => $url );
-
-  # this will work as before:
-  onClick="external(['input1','input2'],['out_div']);"
-
-  # the outside_script.pl will get the values via:
-   $cgi->params('args');
-
-
-  # rename parameters:
-  onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],['out_div']);"
-
-  #retrieve them in an outside script with :
-  #  $cgi->params('myname');
-  #  $cgi->params('myparam');
-  #  if sending to a function IN the perljax script, the perljax object
-  #  uses $q->param('args') so not likely a good idea to rename.
-
-  # rename a parameter to 'myparam' but get the value from an html element with div
-  # id of 'input1':
-
-  onClick="exported_func(['myparam__' + getVal('input1')],['out_div']);"
-
-  # N.B. These examples show the use of outside scripts which are other
-  # perl scripts, but you are not limited to perl - it could just as
-  # easily be php or any other cgi script
-
-
+I<There are several fully-functional examples in the 'scripts/'
+directory of the distribution.>
 
 =head1 DESCRIPTION
 
-CGI::Ajax is an object-oriented module that provides a unique mechanism
-for using perl code asynchronously from javascript-enhanced
-web pages.  You would commonly use CGI::Ajax in AJAX/DHTML-based web
-applications.  CGI::Ajax unburdens the user from having to write any
-javascript, except for having to associate an exported method with
+CGI::Ajax is an object-oriented module that provides a unique
+mechanism for using perl code asynchronously from javascript-enhanced
+web pages.  You would commonly use CGI::Ajax in AJAX/DHTML-based
+web applications.  CGI::Ajax unburdens the user from having to
+write javascript, except for associating an exported method with
 a document-defined event (such as onClick, onKeyUp, etc). Only in
-the more advanced implementations of a exported perl method would
+the more advanced implementations of an exported perl method would
 a user need to write any javascript.
 
 CGI::Ajax supports methods that return single results, or multiple
@@ -105,8 +69,8 @@ CGI::Ajax function name, so you can separate your code processing
 over multiple scripts.
 
 Other than using the Class::Accessor module to generate CGI::Ajax'
-accessor methods, CGI::Ajax is completely self-contained - it does
-not require you to install a larger package or a full Content
+accessor methods, CGI::Ajax is completely self-contained - it
+does not require you to install a larger package or a full Content
 Management System, etc.
 
 A primary goal of CGI::Ajax is to keep the module streamlined and
@@ -114,19 +78,43 @@ maximally flexible.  We are trying to keep the generated javascript
 code to a minimum, but still provide users with a variety of methods
 for deploying CGI::Ajax. And VERY  little user javascript.
 
+=head1 EXAMPLES
 
-=head1 USAGE
+The CGI::Ajax module allows a Perl subroutine to be called
+asynchronously.  To do this, it must be I<exported>:
 
-Create a CGI object to send to CGI::Ajax, export the subroutines
-prior to creating the CGI::Ajax object, like so:
+  my $pjx = new CGI::Ajax( 'JSFUNC' => \&PERLFUNC );
+
+This maps a perl subroutine (PERLFUNC) to an automatically generated
+Javascript function (JSFUNC).  Next you setup an HTML event to call
+the new Javascript function:
+
+  onClick="JSFUNC(['source1','source2'], ['dest1','dest2']); return true;"
+
+where 'source1', 'dest1', 'source2', 'dest2' are the DIV ids of
+HTML elements in your page...
+
+  <input type=text id=source1>
+
+L<CGI::Ajax> sends the values from source1 and source2 to your Perl
+subroutine and returns the results to dest1 and dest2.
+
+=head2 4 Usage Methods
+
+=over 4
+
+=item 1 Standard CGI::Ajax example
+
+Start by defining a perl subroutine that you want available from
+javascript.  In this case we'll define a subrouting that determines
+whether or not an input is odd, even, or not a number (NaN):
 
   use strict;
   use CGI::Ajax;
   use CGI;
 
-  # define a normal perl subroutine that you want available
 
-    sub evenodd_func {
+  sub evenodd_func {
     my $input = shift;
 
     # see if input is defined
@@ -141,52 +129,210 @@ prior to creating the CGI::Ajax object, like so:
 
     # got a number, so mod by 2
     $input % 2 == 0 ? return("EVEN") : return("ODD");
-
   }
 
-  # define a function to generate the web page - this can be done
-  # million different ways, and can also be defined as an anonymous sub.
-  # The only requirement is that the sub send back the html of the page.
+Alternatively, we could have used coderefs to associate an exported
+name...
+
+  my $evenodd_func = sub {
+    # exactly the same as in the above
+  };
+
+Next we define a function to generate the web page - this can be done
+million different ways, and can also be defined as an anonymous sub.
+The only requirement is that the sub send back the html of the page.
+You can do this via a string containing the html, or from a coderef
+that returns the html, or from a function (as shown here)...
 
   sub Show_HTML {
     my $html = <<EOT;
-
   <HTML>
   <HEAD><title>CGI::Ajax Example</title>
   </HEAD>
   <BODY>
     Enter a number:&nbsp;
-    <input type="text" name="val1" id="val1" size="6"
-       onkeyup="evenodd( ['val1'], 'resultdiv' );
-       return true;"><br>
+    <input type="text" name="somename" id="val1" size="6"
+       onkeyup="evenodd( ['val1'], ['resultdiv'] ); return true;"><br>
     <hr>
-    <div id="resultdiv" style="border: 1px solid black;
-          width: 440px; height: 80px; overflow: auto">
+    <div id="resultdiv">
     </div>
   </BODY>
   </HTML>
   EOT
-
     return $html;
   }
 
-  my $cgi = new CGI();  # create a new CGI object
+Note how we reference the exported subroutine in the C<OnKeyup>
+event handler.  The subroutine takes one value from the form,
+the element B<'val1'>, and returns the the result to an HTML div
+element with an id of B<'resultdiv'>.  Sending in the input id in an
+array format is required to support multiple inputs, and similarly,
+to output multiple the results, you can use a an array for the
+output divs, but this isn't mandatory - as will be explained in
+the B<Advanced> usage.
 
-  # create a CGI::Ajax object, and associate our anon code
-  # In >= version 0.20 of CGI::Ajax, you can make the associated
-  # code a url to another CGI script (as seen in the above synopsis).
+Now create a CGI object...
+
+  my $cgi = new CGI();
+
+And finally we create a CGI::Ajax object, associating a reference
+to our subroutine with the name we want available to javascript.
 
   my $pjx = new CGI::Ajax( 'evenodd' => \&evenodd_func );
 
-  # print the form sending in the cgi and the HTML function.  A cgi
-  # object is only necessary in this scenario because we use the
-  # CGI->header() function
+And if we used a coderef, it would look like this...
 
-  # this outputs the html for the page
+  my $pjx = new CGI::Ajax( 'evenodd' => $evenodd_func );
+
+Now we're ready to print the output page; we send in the cgi object
+and the HTML-generating function.  (A cgi object is only necessary
+in this scenario because we use the CGI->header() function.)
+
   print $pjx->build_html($cgi,\&Show_HTML);
+
+That's it for the CGI::Ajax standard method.  Let's look at something
+more advanced.
+
+=item 2 Advanced CGI::Ajax example
+
+Let's say we wanted to have a perl subroutine process multiple
+values from the HTML page, and similarly return multiple values back
+to distinct divs on the page.  This is easy to do, and requires
+no changes to the perl code - you just create it as you would
+any perl subroutine that works with multiple values and returns
+multiple values.  The significant change happens in the event
+handler javascript in the HTML...
+
+  onClick="exported_func(['input1','input2'],['result1','result2']); return true;"
+
+Here we associate our javascript function ("exported_func") with two
+HTML element ids ('input1','input2'), and also send in two HTML
+element ids to place the results in ('result1','result2'). 
+
+=item 3 Sending Perl Subroutine Output to a Javascript function
+
+Occassionally, you might want to have a custom javascript function
+process the returned information from your Perl subroutine.  This is
+possible, and the only requierment is that you change your event
+handler code...
+
+  onClick="exported_func(['input1'],[js_process_func]); return true;"
+
+In this scenario, C<js_process_func> is a javascript function you
+write to take the returned value from your Perl subroutine and
+process the results.  I<Note that a javascript function is not
+quoted.>  Be aware that with this usage, B<you are responsible
+for distributing the results to the appropriate place on the HTML
+page>.  If the exported Perl subroutine returns, e.g. 2 values, then
+C<js_process_func> would need to process the input by working through
+an array, or using the javascript Function C<arguments> object.
+
+  function js_process_func() {
+    var input1 = arguments[0];
+    var input2 = arguments[1];
+    // do something and return results, or set HTML divs using
+    // innerHTML
+    document.getElementById('outputdiv').innerHTML = input1;
+  }
+
+=item 4 URL/Outside Script CGI::Ajax example
+
+There are times when you may want a different script to return
+content to your page.  This can be accomplished with L<CGI::Ajax>
+by using a URL in place of a locally-defined Perl subroutine.
+In this usage, you alter you creation of the L<CGI::Ajax> object
+to link an exported javascript function name to a local URL instead
+of a coderef or a subroutine.
+
+  my $url = 'scripts/outside_script.pl';
+  my $pjx = new CGI::Ajax( 'external' => $url );
+
+This will work as before in terms of how it is called from you event
+handler:
+
+  onClick="external(['input1','input2'],['resultdiv']);"
+
+The outside_script.pl will get the values via a CGI object and
+accessing the 'args' key.  The values of the B<'args'> key will be an
+array of everything that was sent into the script.
+
+  my @input = $cgi->params('args');
+  $input[0]; # contains first argument
+  $input[1]; # contains second argument, etc...
+
+This is good, but what if you need to send in arguments to the other
+script which are directly from the calling Perl script, i.e. you want
+a calling Perl script's variable to be sent, not the value from an
+HTML element on the page?  This is possible using the following syntax
+- notice the escaped quotes and the required C<args__> prefix:
+
+  onClick="exported_func([\"args__$input1\",\"args__$input2\"],['resultdiv']);"
+
+Similary, if the external script required a contant as input (e.g.
+C<http://localhost/script.pl?args=42>, you would use this syntax:
+
+  onClick="exported_func([\"args__42\"],['resultdiv']);"
+
+In both of the above examples, the result from the external script
+would get placed into the I<out_div> element on our (the calling
+script's) page.
+
+In order to rename parameters, in case the outside script needs
+specifically-named parameters and not an I<'args'> parameter, change
+you event handler associated with an event like this
+
+  onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],['resultdiv']);"
+
+The URL generated would look like this I<script.pl?myname=input1&myparam=input2>.
+You would then retrieve the input in the outside script with this...
+
+  my $p1 = $cgi->params('myname');
+  my $p1 = $cgi->params('myparam');
+
+Finally, what if you need to get a value from your page and you want
+to send that value to an outside script but the outside script
+requires a named parameter different from I<'args'>.  You can
+accomplish this with L<CGI::Ajax> using the getVal() javascript
+method (which returns an array):
+
+  onClick="exported_func(['myparam__' + getVal('divid')[0]],['resultdiv']);"
+
+B<N.B.> These examples show the use of outside scripts which are other
+perl scripts - I<but you are not limited to Perl>!  The outside script
+could just as easily have been PHP or any other CGI script.
+
+=back
+
+=head2 GET versus POST
+
+Note that all the examples so far have used the following syntax:
+
+  onClick="exported_func(['input1'],['result1'], 'GET'); return true;"
+
+There is an optional third argument to a L<CGI::Ajax> exported
+function that allows change the submit method.  The above event could
+also have been coded like this...
+
+  onClick="exported_func(['input1'],['result1'], 'GET'); return true;"
+
+By default, L<CGI::Ajax> sends a I<'GET'> request.  If you need it,
+for example your URL is getting way too long, you can easily switch
+to a I<'POST'> request with this syntax...
+
+  onClick="exported_func(['input1'],['result1'], 'POST'); return true;"
 
 
 =head1 METHODS
+
+=cut
+
+############################################# main pod documentation end ##
+
+######################################################
+## METHODS - public                                 ##
+######################################################
+
+=over 4
 
 =item build_html()
 
@@ -197,92 +343,6 @@ prior to creating the CGI::Ajax object, like so:
   Called By: originating cgi script
 
 =cut
-
-=item show_javascript()
-
-    Purpose: builds the text of all the javascript that needs to be
-             inserted into the calling scripts html <head> section
-  Arguments:
-    Returns: javascript text
-  Called By: originating web script
-       Note: This method is also overridden so when you just print
-             a CGI::Ajax object it will output all the javascript needed
-             for the web page.
-
-=cut
-
-=item register()
-
-    Purpose: adds a function name and a code ref to the global coderef
-             hash, after the original object was created
-  Arguments: function name, code reference
-    Returns: none
-  Called By: originating web script
-
-=cut
-
-=item JSDEBUG()
-    Purpose: See the URL that is being generated
-
-  Arguments: JSDEBUG(0); # turn javascript debugging off
-             JSDEBUG(1); # turn javascript debugging on
-    Returns: prints a link to the url that is being generated automatically by
-             the Ajax object. this is VERY useful for seeing what
-             CGI::Ajax is doing. Following the link, will show a page
-             with the output that the page is generating.
-  Called By: $pjx->JSDEBUG(1) # where $pjx is a CGI::Ajax object;
-=cut
-
-=head1 BUGS
-
-=head1 SUPPORT
-
-Check out the sourceforge discussion lists at:
-
-  http://www.sourceforge.net/projects/pjax
-
-=head1 AUTHORS
-
-  Brian C. Thomas     Brent Pedersen
-  CPAN ID: BCT
-  bct.x42@gmail.com   bpederse@gmail.com
-
-=head1 A NOTE ABOUT THE MODULE NAME
-
-This module was initiated using the name "Perljax", but then
-registered with CPAN under the WWW group "CGI::", and so became
-"CGI::Perljax".  Upon further deliberation, we decided to change it's
-name to CGI::Ajax.
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-=head1 SEE ALSO
-
-Class::Accessor, CGI
-
-=cut
-
-############################################# main pod documentation end ##
-
-######################################################
-## METHODS - public                                 ##
-######################################################
-
-
-# sub build_html()
-#
-#    Purpose: associate cgi obj ($q) with pjx object, insert
-#            javascript into <HEAD></HEAD> element
-#  Arguments: either a coderef, or a string containing html
-#    Returns: html or updated html (including the header)
-#  Called By: originating cgi script
-#
 
 sub build_html {
   my ( $self, $q, $html_source ) = @_;
@@ -327,14 +387,18 @@ sub build_html {
   return $self->html();
 }
 
-# sub show_javascript()
-#
-#    Purpose: builds the text of all the javascript that needs to be
-#             inserted into the calling script's html header
-#  Arguments:
-#    Returns: javascript text
-#  Called By: originating web script
-#
+=item show_javascript()
+
+    Purpose: builds the text of all the javascript that needs to be
+             inserted into the calling scripts html <head> section
+  Arguments:
+    Returns: javascript text
+  Called By: originating web script
+       Note: This method is also overridden so when you just print
+             a CGI::Ajax object it will output all the javascript needed
+             for the web page.
+
+=cut
 
 sub show_javascript {
   my ($self) = @_;
@@ -447,15 +511,15 @@ function getVal(id) {
 function fnsplit(arg) {
   var arg2="";
   if (arg.indexOf('__') != -1) {
-    arg2 += '&' + (arg.split(/__/).join('='));
+    arg2 += '&' + encodeURIComponent(arg.split(/__/).join('='));
   } else {
     var ans = getVal(arg);
     if ( typeof ans != 'string' ) {
       for (i=0;i < ans.length;i++) {
-        arg2 += '&args=' + ans[i];
+        arg2 += '&args=' + encodeURIComponent(ans[i]);
       }
     } else {
-      arg2 += '&args=' + ans;
+      arg2 += '&args=' + encodeURIComponent(ans);
     }
   }
   return arg2;
@@ -500,7 +564,6 @@ handleReturn = function() {
     eval(dt[0](data));
   }
 };
-
 
 pjx.prototype.getURL=function(fname) {
   args = this.args;
@@ -578,7 +641,7 @@ sub insert_js_in_head{
   my $js = $self->show_javascript();
 
   if ( $self->JSDEBUG() ) {
-    my $showurl=qq!<br /><div id='__pjxrequest'></div><br/>!;
+    my $showurl=qq!<br/><div id='__pjxrequest'></div><br/>!;
     # find the terminal </body> so we can insert just before it
     my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
     $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
@@ -714,10 +777,10 @@ function $func_name() {
     pjx_obj.url = \'$outside_url\' + sep +  pjx_obj.url;
   }
 
-  var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + pjx_obj.url + ' </a>';
+  var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + decodeURIComponent(pjx_obj.url) + ' </a>';
   pjx_obj.perl_do();
   if ($jsdebug) {
-    document.getElementById('__pjxrequest').innerHTML = tmp;
+    document.getElementById('__pjxrequest').innerHTML = "<pre>" + tmp + "</pre>";
   }
 }
 EOT
@@ -728,13 +791,15 @@ EOT
   return $rv;
 }
 
-# sub Subroutine: register()
-#
-#    Purpose: adds a function name and a code ref to the global coderef hash
-#  Arguments: function name, code reference
-#    Returns: none
-#  Called By: originating web script
-#
+=item register()
+
+    Purpose: adds a function name and a code ref to the global coderef
+             hash, after the original object was created
+  Arguments: function name, code reference
+    Returns: none
+  Called By: originating web script
+
+=cut
 
 sub register {
   my ( $self, $fn, $coderef ) = @_;
@@ -748,5 +813,66 @@ sub register {
     $self->url_list()->{$fn} = $coderef;
   }
 }
+
+=item JSDEBUG()
+
+    Purpose: See the URL that is being generated
+  Arguments: JSDEBUG(0); # turn javascript debugging off
+             JSDEBUG(1); # turn javascript debugging on
+    Returns: prints a link to the url that is being generated automatically by
+             the Ajax object. this is VERY useful for seeing what
+             CGI::Ajax is doing. Following the link, will show a page
+             with the output that the page is generating.
+  Called By: $pjx->JSDEBUG(1) # where $pjx is a CGI::Ajax object;
+
+=item DEBUG()
+
+    Purpose: Show debugging information in web server logs
+  Arguments: DEBUG(0); # turn debugging off (default)
+             DEBUG(1); # turn debugging on
+    Returns: prints debugging information to the web server logs using
+             STDERR
+  Called By: $pjx->DEBUG(1) # where $pjx is a CGI::Ajax object;
+
+=back
+
+=head1 BUGS
+
+see project homepage - none that we know of yet.
+
+=head1 SUPPORT
+
+Check out the sourceforge discussion lists at:
+
+  http://www.sourceforge.net/projects/pjax
+
+=head1 AUTHORS
+
+  Brian C. Thomas     Brent Pedersen
+  CPAN ID: BCT
+  bct.x42@gmail.com   bpederse@gmail.com
+
+=head1 A NOTE ABOUT THE MODULE NAME
+
+This module was initiated using the name "Perljax", but then
+registered with CPAN under the WWW group "CGI::", and so became
+"CGI::Perljax".  Upon further deliberation, we decided to change it's
+name to L<CGI::Ajax>.
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+L<Class::Accessor>
+L<CGI>
+
+=cut
+
 1;
 __END__

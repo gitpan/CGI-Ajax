@@ -66,3 +66,9 @@ Revision history for Perl module CGI::Perljax
   vimrc to prevent real tab chars from coming through.  Removed
   all tab chars and replaced with spaces.  Made lots of changes
   to pjx_combo.pl to better document and organize the html layout.
+
+.52 2005-10-05 11:14:27 -0700 Wed, 05 Oct 2005
+
+  Complete rewrite of POD documentation and expansion of documentation.
+  Added heretofore undocumented capability of sending POST instead of
+  the default GET.
