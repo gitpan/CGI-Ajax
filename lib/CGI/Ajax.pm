@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .52;
+    $VERSION     = .56;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -476,7 +476,7 @@ function pjx(args,fname,method) {
   this.dt=args[1];
   this.args=args[0];
   this.method=method;
-  this.req=ghr();
+  this.r=ghr();
   this.url = this.getURL(fname);
 }
 
@@ -525,11 +525,11 @@ function fnsplit(arg) {
   return arg2;
 }
 
-pjx.prototype.perl_do=function() {
-  r = this.req;
+pjx.prototype.send2perl=function() {
+  r = this.r;
   dt=this.dt;
   url=this.url;
-  var pd ='';
+  var pd;
   if(this.method=="POST"){
     var tmp = url.split(/\\\?/);
     url = tmp[0];
@@ -547,21 +547,27 @@ pjx.prototype.perl_do=function() {
 };
 
 handleReturn = function() {
-  if ( r.readyState!= 4) { return; }
-  var data = r.responseText.split(/__pjx__/);
-  if (dt.constructor != Array) { dt=[dt]; }
-  if (data.constructor != Array) { data=[data]; }
-  if (typeof(dt[0])!='function') {
-    for ( var i=0; i<dt.length; i++ ) {
-      var div = document.getElementById(dt[i]);
-      if(div.type =='text' || div.type=='textarea'){
-        div.value=data[i];
-      } else{
-        div.innerHTML = data[i];
+  for( k=0; k<ajax.length; k++ ) {
+    if (ajax[k].r==null) { ajax.splice(k--,1); continue; }
+    if ( ajax[k].r.readyState== 4) { 
+      var data = ajax[k].r.responseText.split(/__pjx__/);
+      dt = ajax[k].dt;
+      if (dt.constructor != Array) { dt=[dt]; }
+      if (data.constructor != Array) { data=[data]; }
+      if (typeof(dt[0])!='function') {
+        for ( var i=0; i<dt.length; i++ ) {
+          var div = document.getElementById(dt[i]);
+          if (div.type =='text' || div.type=='textarea' ) {
+            div.value=data[i];
+          } else{
+            div.innerHTML = data[i];
+          }
+        }
+      } else if (typeof(dt[0])=='function') {
+        eval(dt[0](data));
       }
+      ajax.splice(k--,1);
     }
-  } else if (typeof(dt[0])=='function') {
-    eval(dt[0](data));
   }
 };
 
@@ -753,35 +759,35 @@ sub make_function {
 
   #create the javascript text
   $rv .= <<EOT;
-
+var ajax = [];
 function $func_name() {
   var args = $func_name.arguments;
   for( i=0; i<args[0].length;i++ ) {
     args[0][i] = fnsplit(args[0][i]);
   }
   method="GET";
-  if(args.length==3){
-    if(args[2]=="POST" || args[2] =="post") { method="POST" }
+  if( args.length==3 && (args[2]=="POST"||args[2]=="post") ) {
+    method="POST";
   }
-  var pjx_obj = new pjx(args,"$func_name",method);
+  ajax.push(new pjx(args,"$func_name",method));
+  var l = ajax.length-1;
   var sep = '?';
+  if ( window.location.toString().indexOf('?') != -1) { sep = '&'; }
   if ( \'$outside_url\' == '0') {
-    if(window.location.toString().indexOf('?')!=-1) {
-      sep = '&';
-    }
-    pjx_obj.url = window.location + sep + pjx_obj.url;
+    ajax[l].url = window.location + sep + ajax[l].url;
   } else {
-    if(window.location.toString().indexOf('?')!=-1) {
-      sep = '&';
-    }
-    pjx_obj.url = \'$outside_url\' + sep +  pjx_obj.url;
+    ajax[l].url = \'$outside_url\' + sep +  ajax[l].url;
   }
-
-  var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + decodeURIComponent(pjx_obj.url) + ' </a>';
-  pjx_obj.perl_do();
+  ajax[l].send2perl();
   if ($jsdebug) {
-    document.getElementById('__pjxrequest').innerHTML = "<pre>" + tmp + "</pre>";
-  }
+    var tmp = document.getElementById('__pjxrequest').innerHTML = "<br><pre>";
+    for( i=0; i < ajax.length; i++ ) {
+      tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
+            decodeURIComponent(ajax[i].url) + ' </a><br>';
+
+    }
+    document.getElementById('__pjxrequest').innerHTML = tmp + "</pre>";
+  }  
 }
 EOT
 

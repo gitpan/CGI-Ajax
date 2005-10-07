@@ -72,3 +72,17 @@ Revision history for Perl module CGI::Perljax
   Complete rewrite of POD documentation and expansion of documentation.
   Added heretofore undocumented capability of sending POST instead of
   the default GET.
+
+.55 2005-10-07 09:33:28 -0700 Fri, 07 Oct 2005
+
+  Can now chain functions; ajax[] array holds pjx objects, so pjx
+  objects don't keep overwriting themselves.
+  Cleaned up javascript custom function code.
+
+.56 2005-10-07 10:35:33 -0700 Fri, 07 Oct 2005
+
+  Changed debugging output for javascript to show multiple URLs is
+  there are chained commands.
+  Fixed a bug introduced in .55 that broke IE browsers - IE doesn't
+  support onload, so switched back to onreadystatechange.
+
