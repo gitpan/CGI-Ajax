@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .56;
+    $VERSION     = .58;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -482,13 +482,24 @@ function pjx(args,fname,method) {
 
 function getVal(id) {
   if (id.constructor == Function ) { return id; }
-  if (typeof id != 'string') { return id; }
+  if (typeof(id)!= 'string') { return id; }
   var element = document.getElementById(id);
   if (element.type == 'select-multiple') {
   var ans = new Array();
     for (i=0;i<element.length;i++) {
       if (element[i].selected) {
         ans.push(element[i].value);
+      }
+    }
+    return ans;
+  }
+  if(element.type == 'radio'){
+    var ans =[];
+    var elms = document.getElementsByTagName('input');
+    var endk = elms.length;
+    for(k=0;k<endk;k++){
+      if(elms[k].type=='radio' && elms[k].checked && elms[k].id==id){
+        ans.push(elms[k].value);
       }
     }
     return ans;
@@ -579,16 +590,26 @@ pjx.prototype.getURL=function(fname) {
   }
   return url;
 };
-
-function ghr() {
-  if ( typeof ActiveXObject!="undefined" ) {
-    try { return new ActiveXObject("Microsoft.XMLHTTP"); }
-    catch(a) { }
-  }
-  if ( typeof XMLHttpRequest!="undefined" ) {
-    return new XMLHttpRequest();
-  }
-  return null;
+ghr=getghr();
+function getghr(){
+    if(typeof XMLHttpRequest != "undefined")
+    {
+        return function(){return new XMLHttpRequest();}
+    }
+    var msv= ["Msxml2.XMLHTTP.7.0", "Msxml2.XMLHTTP.6.0",
+    "Msxml2.XMLHTTP.5.0", "Msxml2.XMLHTTP.4.0", "MSXML2.XMLHTTP.3.0",
+    "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"];
+    for(j=0;j<=msv.length;j++){
+        try
+        {
+            A = new ActiveXObject(msv[j]);
+            if(A){ 
+              return function(){return new ActiveXObject(msv[j]);}
+            }
+        }
+        catch(e) { }
+     }
+     return false;
 }
 EOT
 

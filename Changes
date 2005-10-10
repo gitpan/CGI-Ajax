@@ -86,3 +86,11 @@ Revision history for Perl module CGI::Perljax
   Fixed a bug introduced in .55 that broke IE browsers - IE doesn't
   support onload, so switched back to onreadystatechange.
 
+.57 2005-10-10 09:24:37 -0700 Mon, 10 Oct 2005
+
+  Added radio to scripts directory;
+  Added ability to handle radios;
+  Fixed ghr so it only checks once on page load and returns a closure
+    of the correct xmlhttp/activeX request object
+  Changed name of 'radio.pl' to 'pjx_radio.pl'
+  Versiont to .58

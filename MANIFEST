@@ -12,5 +12,6 @@ scripts/pjx_subs.pl
 scripts/pjx_manyret.pl
 scripts/pjx_combo.pl
 scripts/pjx_chained.pl
+scripts/pjx_radio.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)
