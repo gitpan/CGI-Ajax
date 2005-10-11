@@ -102,3 +102,6 @@ Revision history for Perl module CGI::Perljax
   fix docs in pjx_radio
   Fixed bug reported by anonymous on SF about encodeURIComponent
   encoding '='.  Problem was parens were mislocated.
+
+  .591
+    fixed .59 bug that didn't fix the encodeURIComponent bug
