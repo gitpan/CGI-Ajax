@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .58;
+    $VERSION     = .59;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -522,7 +522,7 @@ function getVal(id) {
 function fnsplit(arg) {
   var arg2="";
   if (arg.indexOf('__') != -1) {
-    arg2 += '&' + encodeURIComponent(arg.split(/__/).join('='));
+    arg2 += '&' + encodeURIComponent(arg.split(/__/)).join('=');
   } else {
     var ans = getVal(arg);
     if ( typeof ans != 'string' ) {

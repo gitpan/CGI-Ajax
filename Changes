@@ -93,4 +93,12 @@ Revision history for Perl module CGI::Perljax
   Fixed ghr so it only checks once on page load and returns a closure
     of the correct xmlhttp/activeX request object
   Changed name of 'radio.pl' to 'pjx_radio.pl'
-  Versiont to .58
+  Version to .58
+
+.59 2005-10-10 09:35:49 -0700 Mon, 10 Oct 2005
+
+  Version incremented to .59.  Modified Changes and MANIFEST.  Modified
+    output of pjx_radio.pl.
+  fix docs in pjx_radio
+  Fixed bug reported by anonymous on SF about encodeURIComponent
+  encoding '='.  Problem was parens were mislocated.
