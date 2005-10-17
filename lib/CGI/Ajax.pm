@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .591;
+    $VERSION     = .60;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -268,18 +268,19 @@ HTML element on the page?  This is possible using the following syntax
 
   onClick="exported_func([\"args__$input1\",\"args__$input2\"],['resultdiv']);"
 
-Similary, if the external script required a contant as input (e.g.
-C<http://localhost/script.pl?args=42>, you would use this syntax:
+Similary, if the external script required a constant as input (e.g.
+C<script.pl?args=42>, you would use this syntax:
 
   onClick="exported_func([\"args__42\"],['resultdiv']);"
 
 In both of the above examples, the result from the external script
-would get placed into the I<out_div> element on our (the calling
+would get placed into the I<resultdiv> element on our (the calling
 script's) page.
 
 In order to rename parameters, in case the outside script needs
-specifically-named parameters and not an I<'args'> parameter, change
-you event handler associated with an event like this
+specifically-named parameters and not CGI::Ajax' I<'args'> default
+parameter name, change your event handler associated with an HTML
+event like this
 
   onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],['resultdiv']);"
 
@@ -289,17 +290,29 @@ You would then retrieve the input in the outside script with this...
   my $p1 = $cgi->params('myname');
   my $p1 = $cgi->params('myparam');
 
-Finally, what if you need to get a value from your page and you want
+Finally, what if you need to get a value from our HTML page and you want
 to send that value to an outside script but the outside script
-requires a named parameter different from I<'args'>.  You can
+requires a named parameter different from I<'args'>?  You can
 accomplish this with L<CGI::Ajax> using the getVal() javascript
-method (which returns an array):
+method (which returns an array, thus the C<getVal()[0]> notation):
 
-  onClick="exported_func(['myparam__' + getVal('divid')[0]],['resultdiv']);"
+  onClick="exported_func(['myparam__' + getVal('div_id')[0]],['resultdiv']);"
+
+This will get the value of our HTML element with and I<id> of
+I<div_id>, and submit it to the url attached to I<myparam__>.  So if
+our exported handler referred to a URI called I<script/scr.pl>, and
+the element on our HTML page called I<div_id> contained the number
+'42', then the URL would look like this C<script/scr.pl?myparam=42>.
+The result from this outside URL would get placed back into our HTML
+page in the element I<resultdiv>.  See the example script that comes
+with the distribution called I<pjx_url.pl> and its associated outside
+script I<convert_degrees.pl> for a working example.
 
 B<N.B.> These examples show the use of outside scripts which are other
 perl scripts - I<but you are not limited to Perl>!  The outside script
-could just as easily have been PHP or any other CGI script.
+could just as easily have been PHP or any other CGI script, as long as
+the return from the other script is just the result, and not addition
+HTML code (like FORM elements, etc).
 
 =back
 
@@ -307,7 +320,7 @@ could just as easily have been PHP or any other CGI script.
 
 Note that all the examples so far have used the following syntax:
 
-  onClick="exported_func(['input1'],['result1'], 'GET'); return true;"
+  onClick="exported_func(['input1'],['result1']); return true;"
 
 There is an optional third argument to a L<CGI::Ajax> exported
 function that allows change the submit method.  The above event could
@@ -326,7 +339,7 @@ to a I<'POST'> request with this syntax...
 
 =cut
 
-############################################# main pod documentation end ##
+################################### main pod documentation end ##
 
 ######################################################
 ## METHODS - public                                 ##
@@ -338,17 +351,23 @@ to a I<'POST'> request with this syntax...
 
     Purpose: associate cgi obj ($cgi) with pjx object, insert
              javascript into <HEAD></HEAD> element
-  Arguments: either a coderef, or a string containing html
+  Arguments: The CGI object, and either a coderef, or a string
+             containing html.  Optionally, you can send in a third
+             parameter containing information that will get passed
+             directly to the CGI object header() call. (Thanks
+             to Jesper Dalberg for this suggestion)
     Returns: html or updated html (including the header)
   Called By: originating cgi script
 
 =cut
 
 sub build_html {
-  my ( $self, $q, $html_source ) = @_;
+  my ( $self, $q, $html_source, $cgi_headers ) = @_;
   if ( $self->DEBUG() ) {
     print STDERR "html_source is ", $html_source, "\n";
   }
+
+  $cgi_headers = [] unless $cgi_headers;
 
   $self->cgi($q);    # associate the CGI object with this object
                      #check if "fname" was defined in the CGI object
@@ -357,8 +376,8 @@ sub build_html {
     # it was, so just return the html from the handled request
     return ( $self->handle_request() );
   } else {
-    my $html = $self->cgi()->header();    # start with the minimum,
-                                          # a http header line
+    my $html = $self->cgi()->header( @$cgi_headers );# start with the minimum,
+                                                     # a http header line
 
     # check if the user sent in a coderef for generating the html,
     # or the actual html
@@ -368,7 +387,7 @@ sub build_html {
 
         # there was a problem evaluating the html-generating function
         # that was sent in, so generate an error page
-        $html = $self->cgi()->header();
+        $html = $self->cgi()->header( @$cgi_headers );
         $html .= qq!<html><body><h2>Problems</h2> with
           the html-generating function sent to CGI::Ajax
           object</body></html>!;
@@ -471,7 +490,7 @@ sub new {
 sub show_common_js {
   my $self = shift;
   my $rv = <<EOT;
-
+var ajax = [];
 function pjx(args,fname,method) {
   this.dt=args[1];
   this.args=args[0];
@@ -504,7 +523,6 @@ function getVal(id) {
     }
     return ans;
   }
-
   try {
     return element.value.toString();
   } catch(e) {
@@ -713,13 +731,13 @@ sub handle_request {
   my ($self) = shift;
 
   my $rv = $self->cgi()->header();
+
   my $result; # $result takes the output of the function, if it's an
               # array split on __pjx__
   my @other = (); # array for catching extra parameters
 
   # make sure "fname" was set in the form from the web page
   return undef unless defined $self->cgi();
-  #return undef unless defined $self->cgi()->param("fname");
 
   # get the name of the function
   my $func_name = $self->cgi()->param("fname");
@@ -782,7 +800,6 @@ sub make_function {
 
   #create the javascript text
   $rv .= <<EOT;
-var ajax = [];
 function $func_name() {
   var args = $func_name.arguments;
   for( i=0; i<args[0].length;i++ ) {
@@ -795,10 +812,12 @@ function $func_name() {
   ajax.push(new pjx(args,"$func_name",method));
   var l = ajax.length-1;
   var sep = '?';
-  if ( window.location.toString().indexOf('?') != -1) { sep = '&'; }
+
   if ( \'$outside_url\' == '0') {
+    if ( window.location.toString().indexOf('?') != -1) { sep = '&'; }
     ajax[l].url = window.location + sep + ajax[l].url;
   } else {
+    if ( \'$outside_url\'.indexOf('?') != -1) { sep = '&'; }
     ajax[l].url = \'$outside_url\' + sep +  ajax[l].url;
   }
   ajax[l].send2perl();

@@ -103,5 +103,25 @@ Revision history for Perl module CGI::Perljax
   Fixed bug reported by anonymous on SF about encodeURIComponent
   encoding '='.  Problem was parens were mislocated.
 
-  .591
+.591
     fixed .59 bug that didn't fix the encodeURIComponent bug
+
+.60 2005-10-17 12:45:31 -0700 Mon, 17 Oct 2005
+  
+  Fixed problem with javascript in make_function() where sep variable
+  was getting overwritten if the processed url contained a '?'.
+  Thanks to pavfed98 for identifying this - reported via rt.cpan.org.
+
+  Added scripts/pjx_url.pl and scripts/convert_degrees.pl to scripts.
+  These were needed to properly test the make_function handling of
+  outside URLs (related to above bug).
+
+  Added support to pass in additional information to build_html()
+  function that gets sent directly to the cgi objects header() call.
+  This allows for custom HTML header information to get sent to the
+  pages generated in the CGI::Ajax system.  Thanks to Jesper Dalberg
+  for suggesting this.
+
+  Modifiedcorrected docs.
+
+  Updated to version 0.60
