@@ -107,7 +107,6 @@ Revision history for Perl module CGI::Perljax
     fixed .59 bug that didn't fix the encodeURIComponent bug
 
 .60 2005-10-17 12:45:31 -0700 Mon, 17 Oct 2005
-  
   Fixed problem with javascript in make_function() where sep variable
   was getting overwritten if the processed url contained a '?'.
   Thanks to pavfed98 for identifying this - reported via rt.cpan.org.
@@ -125,3 +124,26 @@ Revision history for Perl module CGI::Perljax
   Modifiedcorrected docs.
 
   Updated to version 0.60
+
+.64 2005-10-27 09:45 -0700 Thu, 27 Oct 2005
+  Fixed cross-site scripting vulnerability identified in the <=0.60
+  versions.  All users of CGI::Ajax should upgrade asap!  If a browser
+  submits a request for a CGI::Ajax page that contains a function that
+  doesn't exist, a status 400 Bad Request is returned.  Additionally,
+  STDERR gets some output about this event with a "SECURITY" tag, just
+  in case.  Thanks to krusch for catching this!
+
+  Changed how CGI extra header parameters are passed into the CGI
+  object.  Now all parameters destined to CGI->header() are added as a
+  hashref to the CGI::Ajax->build_html() method, like this for example
+
+  $pjx->build_html( $cgi, \&Show_HTML, {-charset=>'UTF-8'} );
+
+  Any pre-0.64 CGI::Ajax script that passed in extra header
+  information to the CGI object will be updating.
+
+  Modified/corrected docs to explain the above change.
+
+  Fixed up javascript code to make all loop variables local.  Thanks
+  to Mingyi Lui.
+

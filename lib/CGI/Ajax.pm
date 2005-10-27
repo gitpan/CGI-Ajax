@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .60;
+    $VERSION     = .64;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -21,7 +21,7 @@ web applications (formerly know as the module CGI::Perljax).
 
   use CGI;
   use CGI::Ajax;
-  my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
+  y $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
   $pjx->build_html( $cgi, \&Show_HTML);
 
   sub perl_func {
@@ -185,10 +185,19 @@ And if we used a coderef, it would look like this...
   my $pjx = new CGI::Ajax( 'evenodd' => $evenodd_func );
 
 Now we're ready to print the output page; we send in the cgi object
-and the HTML-generating function.  (A cgi object is only necessary
-in this scenario because we use the CGI->header() function.)
+and the HTML-generating function.
 
   print $pjx->build_html($cgi,\&Show_HTML);
+
+CGI::Ajax has support for passing in extra HTML header information to
+the CGI object.  This can be accomplished by adding a third argument
+to the build_html() call.  The argument needs to be a hashref
+containing Key=>value pairs that CGI objects understand:
+
+  print $pjx->build_html($cgi,\&Show_HTML,
+    {-charset=>'UTF-8, -expires=>'-1d'});
+
+See L<CGI> for more header() options.
 
 That's it for the CGI::Ajax standard method.  Let's look at something
 more advanced.
@@ -362,32 +371,50 @@ to a I<'POST'> request with this syntax...
 =cut
 
 sub build_html {
-  my ( $self, $q, $html_source, $cgi_headers ) = @_;
-  if ( $self->DEBUG() ) {
-    print STDERR "html_source is ", $html_source, "\n";
+  my ( $self, $cgi, $html_source, $cgi_header_extra ) = @_;
+
+  if ( ref( $cgi ) eq "CGI" ) {
+    if ( $self->DEBUG() ) {
+      print STDERR "CGI::Ajax->build_html: CGI object was received\n";
+    }
+    $self->cgi( $cgi ); # associate the cgi obj with the CGI::Ajax object
   }
 
-  $cgi_headers = [] unless $cgi_headers;
+  if ( defined $cgi_header_extra ) {
+    if ( $self->DEBUG() ) {
+      print STDERR "CGI::Ajax->build_html: got extra cgi header info\n";
+      if ( ref($cgi_header_extra) eq "HASH" ) {
+        foreach my $k ( keys %$cgi_header_extra ) {
+          print STDERR "\t$k => ", $cgi_header_extra->{$k}, "\n";
+        }
+      } else {
+        print STDERR "\t$cgi_header_extra\n";
+      }
+    }
+    $self->cgi_header_extra( $cgi_header_extra ); 
+  }
 
-  $self->cgi($q);    # associate the CGI object with this object
-                     #check if "fname" was defined in the CGI object
+  #check if "fname" was defined in the CGI object
   if ( defined $self->cgi()->param("fname") ) {
-
     # it was, so just return the html from the handled request
     return ( $self->handle_request() );
   } else {
-    my $html = $self->cgi()->header( @$cgi_headers );# start with the minimum,
-                                                     # a http header line
+    
+    # start with the minimum, a http header line and any extra cgi
+    # header params sent in
+    my $html = $self->cgi()->header( $self->cgi_header_extra() );
 
     # check if the user sent in a coderef for generating the html,
     # or the actual html
     if ( ref($html_source) eq "CODE" ) {
+      if ( $self->DEBUG() ) {
+        print STDERR "CGI::Ajax->build_html: html_source is a CODEREF\n";
+      }
       eval { $html .= &$html_source };
       if ($@) {
-
         # there was a problem evaluating the html-generating function
         # that was sent in, so generate an error page
-        $html = $self->cgi()->header( @$cgi_headers );
+        $html = $self->cgi()->header( $self->cgi_header_extra() );
         $html .= qq!<html><body><h2>Problems</h2> with
           the html-generating function sent to CGI::Ajax
           object</body></html>!;
@@ -395,8 +422,10 @@ sub build_html {
       }
       $self->html($html);    # no problems, so set html
     } else {
-
       # user must have sent in raw html, so add it
+      if ( $self->DEBUG() ) {
+        print STDERR "CGI::Ajax->build_html: html_source is HTML\n";
+      }
       $self->html( $html . $html_source );
     }
 
@@ -438,7 +467,7 @@ sub show_javascript {
 sub new {
   my ($class) = shift;
   my $self = bless ({}, ref ($class) || $class);
-  $self->mk_accessors( qw(url_list coderef_list cgi html DEBUG JSDEBUG) );
+  $self->mk_accessors( qw(url_list coderef_list DEBUG JSDEBUG html ) );
   $self->JSDEBUG(0); # turn javascript debugging off (if on,
                      # extra info will be added to the web page output
   $self->DEBUG(0);   # turn debugging off (if on, check web logs)
@@ -446,8 +475,9 @@ sub new {
   #accessorized attributes
   $self->{coderef_list} = {};
   $self->{url_list} = {};
-  $self->{html}=undef;
-  $self->{cgi}= undef;
+  $self->{html} = undef;
+  $self->{cgi} = undef;
+  $self->{cgi_header_extra} = {};
 
   if ( @_ < 2 ) {
     die "incorrect usage: must have fn=>code pairs in new\n";
@@ -478,6 +508,55 @@ sub new {
 ## METHODS - private                                ##
 ######################################################
 
+# sub cgiobj(), cgi()
+#
+#    Purpose: accessor method to associate a CGI object with our
+#             CGI::Ajax object
+#  Arguments: a CGI object
+#    Returns: CGI::Ajax objects cgi object
+#  Called By: originating cgi script, or build_html()
+#
+sub cgiobj {
+  my $self = shift;
+  # see if any values were sent in...
+  if ( @_ ) {
+    my $cgi = shift;
+    if ( ref($cgi) eq "CGI" ) {
+      $self->{'cgi'} = $cgi;
+    } else {
+      die "CGI::Ajax -- Can't set internal CGI object to a non-CGI object\n";
+    }
+  }
+  # return the object
+  return( $self->{'cgi'} );
+}
+
+sub cgi {
+  my $self = shift;
+  if ( @_ ) {
+    return( $self->cgiobj( @_ ) );
+  } else {
+    return( $self->cgiobj() );
+  }
+}
+
+# sub cgi_header_extra
+#
+#    Purpose: accessor method to associate CGI header information
+#             with the CGI::Ajax object
+#  Arguments: a hashref with key=>value pairs that get handed off to
+#             the CGI object's header() method
+#    Returns: hashref of extra cgi header params
+#  Called By: originating cgi script, or build_html()
+
+sub cgi_header_extra {
+  my $self = shift;
+  if ( @_ ) {
+    $self->{'cgi_header_extra'} = shift;
+  }
+  return( $self->{'cgi_header_extra'} );
+}
+
 # sub show_common_js()
 #
 #    Purpose: create text of the javascript needed to interface with
@@ -505,7 +584,7 @@ function getVal(id) {
   var element = document.getElementById(id);
   if (element.type == 'select-multiple') {
   var ans = new Array();
-    for (i=0;i<element.length;i++) {
+    for (var i=0;i<element.length;i++) {
       if (element[i].selected) {
         ans.push(element[i].value);
       }
@@ -516,7 +595,7 @@ function getVal(id) {
     var ans =[];
     var elms = document.getElementsByTagName('input');
     var endk = elms.length;
-    for(k=0;k<endk;k++){
+    for(var k=0;k<endk;k++){
       if(elms[k].type=='radio' && elms[k].checked && elms[k].id==id){
         ans.push(elms[k].value);
       }
@@ -546,7 +625,7 @@ function fnsplit(arg) {
   } else {
     var ans = getVal(arg);
     if ( typeof ans != 'string' ) {
-      for (i=0;i < ans.length;i++) {
+      for (var i=0;i < ans.length;i++) {
         arg2 += '&args=' + encodeURIComponent(ans[i]);
       }
     } else {
@@ -578,7 +657,7 @@ pjx.prototype.send2perl=function() {
 };
 
 handleReturn = function() {
-  for( k=0; k<ajax.length; k++ ) {
+  for( var k=0; k<ajax.length; k++ ) {
     if (ajax[k].r==null) { ajax.splice(k--,1); continue; }
     if ( ajax[k].r.readyState== 4) { 
       var data = ajax[k].r.responseText.split(/__pjx__/);
@@ -605,7 +684,7 @@ handleReturn = function() {
 pjx.prototype.getURL=function(fname) {
   args = this.args;
   url= 'fname=' + fname;
-  for (i=0;i<args.length;i++) {
+  for (var i=0;i<args.length;i++) {
     url=url + args[i];
   }
   return url;
@@ -619,7 +698,7 @@ function getghr(){
     var msv= ["Msxml2.XMLHTTP.7.0", "Msxml2.XMLHTTP.6.0",
     "Msxml2.XMLHTTP.5.0", "Msxml2.XMLHTTP.4.0", "MSXML2.XMLHTTP.3.0",
     "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"];
-    for(j=0;j<=msv.length;j++){
+    for(var j=0;j<=msv.length;j++){
         try
         {
             A = new ActiveXObject(msv[j]);
@@ -730,14 +809,14 @@ sub insert_js_in_head{
 sub handle_request {
   my ($self) = shift;
 
-  my $rv = $self->cgi()->header();
-
   my $result; # $result takes the output of the function, if it's an
               # array split on __pjx__
   my @other = (); # array for catching extra parameters
 
   # make sure "fname" was set in the form from the web page
   return undef unless defined $self->cgi();
+
+  my $rv = $self->cgi()->header( $self->cgi_header_extra );
 
   # get the name of the function
   my $func_name = $self->cgi()->param("fname");
@@ -771,7 +850,12 @@ sub handle_request {
 
     } # end if ref = CODE
   } else {
-    $rv .= "CGI::Ajax - $func_name is not defined!";
+    # # problems with the URL, return a CGI rrror
+    print STDERR "POSSIBLE SECURITY INCIDENT! Browser from ", $self->cgi()->remote_addr();
+    print STDERR "\trequested URL: ", $self->cgi()->url();
+    print STDERR "\tfname request: ", $self->cgi()->param('fname');
+    print STDERR " -- returning Bad Request status 400\n";
+    return($self->cgi()->header( -status=>'400' ));
   }
   return $rv;
 }
@@ -802,7 +886,7 @@ sub make_function {
   $rv .= <<EOT;
 function $func_name() {
   var args = $func_name.arguments;
-  for( i=0; i<args[0].length;i++ ) {
+  for( var i=0; i<args[0].length;i++ ) {
     args[0][i] = fnsplit(args[0][i]);
   }
   method="GET";
@@ -823,7 +907,7 @@ function $func_name() {
   ajax[l].send2perl();
   if ($jsdebug) {
     var tmp = document.getElementById('__pjxrequest').innerHTML = "<br><pre>";
-    for( i=0; i < ajax.length; i++ ) {
+    for( var i=0; i < ajax.length; i++ ) {
       tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
             decodeURIComponent(ajax[i].url) + ' </a><br>';
 
