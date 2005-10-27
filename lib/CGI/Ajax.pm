@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .64;
+    $VERSION     = .641;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -15,14 +15,14 @@ BEGIN {
 =head1 NAME
 
 CGI::Ajax - a perl-specific system for writing AJAX- or DHTML-based
-web applications (formerly know as the module CGI::Perljax).
+web applications (formerly known as the module CGI::Perljax).
 
 =head1 SYNOPSIS
 
   use CGI;
   use CGI::Ajax;
-  y $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
-  $pjx->build_html( $cgi, \&Show_HTML);
+  my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
+  print $pjx->build_html( $cgi, \&Show_HTML);
 
   sub perl_func {
     my $input = shift;
@@ -621,15 +621,15 @@ function fnsplit(arg) {
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
     arg2 += '&' + arga[0] +'='+ encodeURIComponent(arga[1]);
-    
   } else {
     var ans = getVal(arg);
     if ( typeof ans != 'string' ) {
+      if ( ans.length == 0 ) { arg2 += '&args=&' + arg + '='; }
       for (var i=0;i < ans.length;i++) {
-        arg2 += '&args=' + encodeURIComponent(ans[i]);
+        arg2 += '&args=' + encodeURIComponent(ans[i]) + '&' + arg + '=' + encodeURIComponent(ans[i]);
       }
     } else {
-      arg2 += '&args=' + encodeURIComponent(ans);
+      arg2 += '&args=' + encodeURIComponent(ans) + '&' + arg + '=' + encodeURIComponent(ans);;
     }
   }
   return arg2;

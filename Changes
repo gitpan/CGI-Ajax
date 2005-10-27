@@ -147,3 +147,8 @@ Revision history for Perl module CGI::Perljax
   Fixed up javascript code to make all loop variables local.  Thanks
   to Mingyi Lui.
 
+.641 2005-10-27 12:54 -0700 Thu, 27 Oct 2005
+  Pod documentations fixups.
+
+  Changed fnsplit to better support multiple selects (thanks Mingyi
+  Lui)
