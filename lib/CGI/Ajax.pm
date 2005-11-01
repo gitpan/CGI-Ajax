@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .641;
+    $VERSION     = .65;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -19,14 +19,19 @@ web applications (formerly known as the module CGI::Perljax).
 
 =head1 SYNOPSIS
 
+  use strict;
   use CGI;
   use CGI::Ajax;
+
+  my $cgi = new CGI;
   my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
+
   print $pjx->build_html( $cgi, \&Show_HTML);
 
   sub perl_func {
     my $input = shift;
     # do something with $input
+    my $output = $input . " was the input!";
     return( $output );
   }
 
@@ -40,7 +45,7 @@ web applications (formerly known as the module CGI::Perljax).
       <div id="resultdiv"></div>
     </BODY>
     </HTML>
-    EOHTML
+  EOHTML
     return $html;
   }
 
@@ -636,9 +641,9 @@ function fnsplit(arg) {
 }
 
 pjx.prototype.send2perl=function() {
-  r = this.r;
-  dt=this.dt;
-  url=this.url;
+  var r = this.r;
+  var dt=this.dt;
+  var url=this.url;
   var pd;
   if(this.method=="POST"){
     var tmp = url.split(/\\\?/);
@@ -646,14 +651,15 @@ pjx.prototype.send2perl=function() {
     pd = tmp[1];
   }
   r.open(this.method,url,true);
+  r.setRequestHeader('Cache-Control','no-cache');
   if(this.method=="POST"){
     r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     r.send(pd);
   }
-  r.onreadystatechange=handleReturn;
   if(this.method=="GET"){
     r.send(null);
   }
+  r.onreadystatechange=handleReturn;
 };
 
 handleReturn = function() {
