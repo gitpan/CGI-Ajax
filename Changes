@@ -152,3 +152,19 @@ Revision history for Perl module CGI::Perljax
 
   Changed fnsplit to better support multiple selects (thanks Mingyi
   Lui)
+
+------------------------------------------------------------------------
+.65 2005-10-27 12:55 -0700 Thu, 27 Oct 2005
+
+  pod typo corrections
+
+  changed javascript fnsplit to better support multiple-selects styles
+
+  add pjx_callback.pl to demonstrate the use of a callback function.
+  this required a fix in the Ajax.pm code 
+
+  Fixed up synopsis example POD.
+
+.651 2005-11-02 07:32 -0800 Wed, 02 Nov 2005
+
+  added support for hidden fields.

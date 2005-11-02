@@ -11,6 +11,7 @@ scripts/pjx_podex.pl
 scripts/pjx_subs.pl
 scripts/pjx_manyret.pl
 scripts/pjx_combo.pl
+scripts/pjx_callback.pl
 scripts/pjx_chained.pl
 scripts/pjx_radio.pl
 scripts/pjx_url.pl

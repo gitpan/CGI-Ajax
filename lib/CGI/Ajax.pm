@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .65;
+    $VERSION     = .651;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -673,7 +673,7 @@ handleReturn = function() {
       if (typeof(dt[0])!='function') {
         for ( var i=0; i<dt.length; i++ ) {
           var div = document.getElementById(dt[i]);
-          if (div.type =='text' || div.type=='textarea' ) {
+          if (div.type =='text' || div.type=='textarea' || div.type='hidden' ) {
             div.value=data[i];
           } else{
             div.innerHTML = data[i];
