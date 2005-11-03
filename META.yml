@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         CGI-Ajax
-version:      0.651
+version:      0.652
 version_from: lib/CGI/Ajax.pm
 installdirs:  site
 requires:
