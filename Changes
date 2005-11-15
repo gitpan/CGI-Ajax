@@ -172,3 +172,18 @@ Revision history for Perl module CGI::Perljax
 .652 2005-11-03 13:41 -0800 
 
   fixed type in javascript for handling hidden fields!
+
+r72 | bcthomas | 2005-11-03 13:42:42 -0800 (Thu, 03 Nov 2005) | 2 lines
+
+  updated version and Changes to reflect .652 release
+
+r73 | bcthomas | 2005-11-14 18:42:42
+
+  moved some debugging code around so perl can handle the jdebug
+  state.  Thanks beanz!
+
+  Added a script (pjx_nobuild.pl) to demonstrate not using
+  build_html() but to instead handle the various stages of 
+  the async communication manually.
+
+  Fixed up POD

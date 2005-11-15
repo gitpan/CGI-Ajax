@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .652;
+    $VERSION     = .653;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -886,7 +886,17 @@ sub make_function {
   my $rv = "";
   my $outside_url = $self->url_list()->{ $func_name };
   if (not defined $outside_url) { $outside_url = 0; }
-  my $jsdebug = $self->JSDEBUG(); # set $jsdebug for interpolating into HERE document
+  my $jsdebug = "";
+  if ( $self->JSDEBUG()) {
+    $jsdebug .= <<EOT;
+    var tmp = document.getElementById('__pjxrequest').innerHTML = "<br><pre>";
+    for( var i=0; i < ajax.length; i++ ) {
+      tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
+      decodeURIComponent(ajax[i].url) + ' </a><br>';
+    }
+    document.getElementById('__pjxrequest').innerHTML = tmp + "</pre>";
+EOT
+  }
 
   #create the javascript text
   $rv .= <<EOT;
@@ -911,15 +921,7 @@ function $func_name() {
     ajax[l].url = \'$outside_url\' + sep +  ajax[l].url;
   }
   ajax[l].send2perl();
-  if ($jsdebug) {
-    var tmp = document.getElementById('__pjxrequest').innerHTML = "<br><pre>";
-    for( var i=0; i < ajax.length; i++ ) {
-      tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
-            decodeURIComponent(ajax[i].url) + ' </a><br>';
-
-    }
-    document.getElementById('__pjxrequest').innerHTML = tmp + "</pre>";
-  }  
+  $jsdebug
 }
 EOT
 
@@ -1007,8 +1009,9 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
-L<Class::Accessor>
+L<Data::Javascript>
 L<CGI>
+L<Class::Accessor>
 
 =cut
 
