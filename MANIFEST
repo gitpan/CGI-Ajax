@@ -15,6 +15,7 @@ scripts/pjx_callback.pl
 scripts/pjx_chained.pl
 scripts/pjx_radio.pl
 scripts/pjx_url.pl
+scripts/pjx_nobuild.pl
 scripts/convert_degrees.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

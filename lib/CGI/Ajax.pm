@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .653;
+    $VERSION     = .654;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -885,7 +885,7 @@ sub make_function {
   return("") if $func_name eq "";
   my $rv = "";
   my $outside_url = $self->url_list()->{ $func_name };
-  if (not defined $outside_url) { $outside_url = 0; }
+  my $url = defined $outside_url ? "'$outside_url'" : "window.location.toString()";
   my $jsdebug = "";
   if ( $self->JSDEBUG()) {
     $jsdebug .= <<EOT;
@@ -913,13 +913,8 @@ function $func_name() {
   var l = ajax.length-1;
   var sep = '?';
 
-  if ( \'$outside_url\' == '0') {
-    if ( window.location.toString().indexOf('?') != -1) { sep = '&'; }
-    ajax[l].url = window.location + sep + ajax[l].url;
-  } else {
-    if ( \'$outside_url\'.indexOf('?') != -1) { sep = '&'; }
-    ajax[l].url = \'$outside_url\' + sep +  ajax[l].url;
-  }
+  if ( $url.indexOf('?') != -1) { sep = '&'; }
+  ajax[l].url = $url + sep + ajax[l].url;
   ajax[l].send2perl();
   $jsdebug
 }
