@@ -10,9 +10,9 @@ print $q->header();
 if ( defined $q->param('submit') or defined $q->param('Centigrade') or defined $q->param('Kelvin')) {
   my $result = "";
   if ( defined $q->param('Centigrade') and $q->param('Centigrade') ne "") {
-    $result = $q->param('Centigrade') - 273.15;
+    $result = $q->param('Centigrade') + 273.15;
   } elsif ( defined $q->param('Kelvin') and $q->param('Kelvin') ne "" ) {
-    $result = $q->param('Kelvin') + 273.15;
+    $result = $q->param('Kelvin') - 273.15;
   }
   print $result;
   #print &Show_Form();

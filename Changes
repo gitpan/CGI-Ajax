@@ -173,11 +173,9 @@ Revision history for Perl module CGI::Perljax
 
   fixed type in javascript for handling hidden fields!
 
-r72 | bcthomas | 2005-11-03 13:42:42 -0800 (Thu, 03 Nov 2005) | 2 lines
-
   updated version and Changes to reflect .652 release
 
-r73 | bcthomas | 2005-11-14 18:42:42
+.653 | bcthomas | 2005-11-14 18:42:42
 
   moved some debugging code around so perl can handle the jdebug
   state.  Thanks beanz!
@@ -187,3 +185,25 @@ r73 | bcthomas | 2005-11-14 18:42:42
   the async communication manually.
 
   Fixed up POD
+
+.654 | bcthomas | 2005-11-15 10:38:55
+
+  Added fix for redundant js if test back in.  Thanks again beanz
+
+  Updated MANIFEST to show new no build_html() script and incremented
+  version to 0.654
+
+0.66 | bcthomas | 2005-11-29 10:22
+  
+  POD cleanup/corrections
+
+  Added support for other CGI handlers/decoders (like CGI::Simple,
+  CGI::Lite, CGI::Minimal, although we can't really test them since we
+  are running mod_perl2 only here.
+
+  Fixed typo in pjx_url.pl/convert_degrees.pl that was reversing the
+  sign on the kelvin degree conversion (thanks Wolfgang Baron!)
+
+  Switched home page URL to www.perljax.us
+
+  Updated version to 0.66
