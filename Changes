@@ -207,3 +207,14 @@ Revision history for Perl module CGI::Perljax
   Switched home page URL to www.perljax.us
 
   Updated version to 0.66
+
+0.662 | bcthomas | 2005-11-29 10:22
+  
+  POD cleanup/corrections
+
+  Added a example script to show proper way to use a javascript
+  function to split arguments returned from a perl-exported function.
+  scripts/pjx_splitargs.pl
+
+  Updated version to 0.662
+

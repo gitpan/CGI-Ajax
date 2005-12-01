@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .66;
+    $VERSION     = .662;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -253,8 +253,9 @@ by working through an array, or using the javascript Function
 C<arguments> object.
 
   function js_process_func() {
-    var input1 = arguments[0];
-    var input2 = arguments[1];
+    var args = arguments[0].toString().split(/,/);
+    var input1 = args[0]
+    var input2 = args[1];
     // do something and return results, or set HTML divs using
     // innerHTML
     document.getElementById('outputdiv').innerHTML = input1;
