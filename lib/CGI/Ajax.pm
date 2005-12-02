@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .662;
+    $VERSION     = .67;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -172,7 +172,7 @@ html, or from a coderef that returns the html, or from a function
     </div>
   </BODY>
   </HTML>
-  EOT
+EOT
     return $html;
   }
 
@@ -253,9 +253,8 @@ by working through an array, or using the javascript Function
 C<arguments> object.
 
   function js_process_func() {
-    var args = arguments[0].toString().split(/,/);
-    var input1 = args[0]
-    var input2 = args[1];
+    var input1 = arguments[0]
+    var input2 = arguments[1];
     // do something and return results, or set HTML divs using
     // innerHTML
     document.getElementById('outputdiv').innerHTML = input1;
@@ -721,7 +720,13 @@ handleReturn = function() {
           }
         }
       } else if (typeof(dt[0])=='function') {
-        eval(dt[0](data));
+         var d=data;
+         var str = "dt[0](";
+         for(m=0;m<d.length-1;m++){
+           str+= "d[" + m + "],";
+         }
+         str+="d[" + m +"])";
+         eval(str);
       }
       ajax.splice(k--,1);
     }

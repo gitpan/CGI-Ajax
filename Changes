@@ -208,7 +208,7 @@ Revision history for Perl module CGI::Perljax
 
   Updated version to 0.66
 
-0.662 | bcthomas | 2005-11-29 10:22
+0.662 | bcthomas | 2005-12-01 12:15
   
   POD cleanup/corrections
 
@@ -218,3 +218,17 @@ Revision history for Perl module CGI::Perljax
 
   Updated version to 0.662
 
+0.67 | bcthomas | 2005-12-01 16:29
+
+  reversed quick fix for javascript handling return values from perl
+  functions added in 0.662.
+
+  now multiple returns to a callback function are handled as
+  arguments[0], arguments[1], etc. uses an eval in the javascript
+  code, the way it was described in the POD, but wasn't coded.
+
+  changed splitargs.pl: added value="" to <input>'s getting the
+  return values from the function call to stop weird javascript
+  warning
+
+  Updated to 0.67

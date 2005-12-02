@@ -17,5 +17,6 @@ scripts/pjx_radio.pl
 scripts/pjx_url.pl
 scripts/pjx_nobuild.pl
 scripts/convert_degrees.pl
+scripts/pjx_splitargs.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)
