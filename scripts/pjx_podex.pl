@@ -39,7 +39,7 @@ sub Show_HTML {
 <BODY>
   Enter a number:&nbsp;
   <input type="text" name="val1" id="val1" size="6"
-     onkeyup="evenodd( ['val1'], 'resultdiv' ); return true;"><br>
+     onkeyup="evenodd( ['val1'], ['resultdiv'] ); return true;"><br>
     <hr>
     <div id="resultdiv" style="border: 1px solid black;
           width: 440px; height: 80px; overflow: auto">

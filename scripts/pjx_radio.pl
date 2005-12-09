@@ -27,7 +27,7 @@ sub Show_HTML {
 </HEAD>
 <BODY>
 <form>
-<DIV id="radiobuttons" onclick="myFunc( ['radio1'], 'result' ); return true;"> 
+<DIV id="radiobuttons" onclick="myFunc( ['radio1'], ['result'] );"> 
 <input TYPE="radio" ID="radio1" NAME="radio1" VALUE="red">red 
 <input TYPE="radio" ID="radio1" NAME="radio1" VALUE="blue">blue 
 <input TYPE="radio" ID="radio1" NAME="radio1" VALUE="yellow">yellow 

@@ -38,10 +38,10 @@ sub Show_Form {
 </HEAD>
 <BODY>
   Enter something:&nbsp;
-  <input type="text" name="val1" id="val1" size="6" onkeyup="myfunc( ['val1','val2'], 'resultdiv' ); return true;"><br>
+  <input type="text" name="val1" id="val1" size="6" onkeyup="myfunc( ['val1','val2'], ['resultdiv'] );"><br>
 
   Enter something else:&nbsp;
-  <input type="text" name="val2" id="val2" size="6" onkeyup="myfunc( ['val1','val2'], 'resultdiv' ); return true;"><br>
+  <input type="text" name="val2" id="val2" size="6" onkeyup="myfunc( ['val1','val2'], ['resultdiv'] );"><br>
 
     <hr>
     <div id="resultdiv" style="border: 1px solid black; width: 440px; height: 80px; overflow: auto">

@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .67;
+    $VERSION     = .68;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -262,12 +262,15 @@ C<arguments> object.
 
 =item 4 URL/Outside Script CGI::Ajax example
 
-There are times when you may want a different script to return
-content to your page.  This can be accomplished with L<CGI::Ajax>
-by using a URL in place of a locally-defined Perl subroutine.
-In this usage, you alter you creation of the L<CGI::Ajax> object to
-link an exported javascript function name to a local URL instead
-of a coderef or a subroutine.
+There are times when you may want a different script to
+return content to your page.  This could be because you have
+an existing script already written to perform a particular
+task, or you want to distribute a part of your application to another
+script.  This can be accomplished in L<CGI::Ajax> by using a URL in
+place of a locally-defined Perl subroutine.  In this usage,
+you alter you creation of the L<CGI::Ajax> object to link an
+exported javascript function name to a local URL instead of
+a coderef or a subroutine.
 
   my $url = 'scripts/other_script.pl';
   my $pjx = new CGI::Ajax( 'external' => $url );
@@ -289,16 +292,15 @@ This is good, but what if you need to send in arguments to the
 other script which are directly from the calling Perl script,
 i.e. you want a calling Perl script's variable to be sent, not
 the value from an HTML element on the page?  This is possible
-using the following syntax - notice the escaped quotes and the
-required C<args__> prefix:
+using the following syntax:
 
-  onClick="exported_func([\"args__$input1\",\"args__$input2\"],
+  onClick="exported_func(['args__$input1','args__$input2'],
                          ['resultdiv']);"
 
 Similary, if the external script required a constant as input
 (e.g.  C<script.pl?args=42>, you would use this syntax:
 
-  onClick="exported_func([\"args__42\"],['resultdiv']);"
+  onClick="exported_func(['args__42'],['resultdiv']);"
 
 In both of the above examples, the result from the external
 script would get placed into the I<resultdiv> element on our
@@ -309,7 +311,7 @@ specifically-named parameters and not CGI::Ajax' I<'args'> default
 parameter name, change your event handler associated with an HTML
 event like this
 
-  onClick="exported_func([\"myname__$input1\",\"myparam__$input2\"],
+  onClick="exported_func(['myname__$input1','myparam__$input2'],
                          ['resultdiv']);"
 
 The URL generated would look like this...
@@ -369,6 +371,18 @@ to a I<'POST'> request with this syntax...
 
 I<('POST' and 'post' are supported)>
 
+=head2 Page Caching
+
+We have implemented a method to prevent page cacheing from undermining
+the AJAX methods in a page.  If you send in an input argument to a
+L<CGI::Ajax>-exported function called 'NO_CACHE', the a special
+parameter will get attached to the end or your url with a random
+number in it.  This will prevent a browser from caching your request.
+
+  onClick="exported_func(['input1','NO_CACHE'],['result1']);"
+
+The extra param is called pjxrand, and won't interfere with the order
+of processing for the rest of your parameters.
 
 =head1 METHODS
 
@@ -384,8 +398,19 @@ I<('POST' and 'post' are supported)>
 
 =item build_html()
 
-    Purpose: associate cgi obj ($cgi) with pjx object, insert
-             javascript into <HEAD></HEAD> element
+    Purpose: Associates a cgi obj ($cgi) with pjx object, inserts
+             javascript into <HEAD></HEAD> element and constructs
+             the page, or part of the page.  AJAX applications
+             are designed to update only the section of the
+             page that needs it - the whole page doesn't have
+             to be redrawn.  L<CGI::Ajax> applications use the
+             build_html() method to take care of this: if the CGI
+             parameter C<fname> exists, then the return from the
+             L<CGI::Ajax>-exported function is sent to the page.
+             Otherwise, the entire page is sent, since without
+             an C<fname> param, this has to be the first time
+             the page is being built.
+
   Arguments: The CGI object, and either a coderef, or a string
              containing html.  Optionally, you can send in a third
              parameter containing information that will get passed
@@ -512,6 +537,12 @@ sub new {
   $self->mk_accessors( qw(url_list coderef_list DEBUG JSDEBUG html ) );
   $self->JSDEBUG(0); # turn javascript debugging off (if on,
                      # extra info will be added to the web page output
+                     # if set to 1, then the core js will get
+                     # compressed, but the user-defined functions will
+                     # not be compressed.  If set to 2 (or anything
+                     # greater than 1 or 0), then none of the
+                     # javascript will get compressed.
+                     #
   $self->DEBUG(0);   # turn debugging off (if on, check web logs)
 
   #accessorized attributes
@@ -618,7 +649,9 @@ var ajax = [];
 function pjx(args,fname,method) {
   this.dt=args[1];
   this.args=args[0];
-  this.method=method;
+  method=(method)?method:'GET';
+  if(method=='post'){method='POST';}
+  this.method = method;
   this.r=ghr();
   this.url = this.getURL(fname);
 }
@@ -663,6 +696,7 @@ function getVal(id) {
 
 function fnsplit(arg) {
   var arg2="";
+  if (arg == 'NO_CACHE') { return '&_pjxrand_='  + Math.random() }
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
     arg2 += '&' + arga[0] +'='+ encodeURIComponent(arga[1]);
@@ -682,19 +716,18 @@ function fnsplit(arg) {
 
 pjx.prototype.send2perl=function() {
   var r = this.r;
-  var dt=this.dt;
+	var dt = this.dt;
   var url=this.url;
-  var pd;
+  var postdata;
   if(this.method=="POST"){
-    var tmp = url.split(/\\\?/);
-    url = tmp[0];
-    pd = tmp[1];
+    var idx=url.indexOf('?');
+    postdata = url.substr(idx+1);
+    url = url.substr(0,idx);
   }
   r.open(this.method,url,true);
-  r.setRequestHeader('Cache-Control','no-cache');
   if(this.method=="POST"){
     r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    r.send(pd);
+    r.send(postdata);
   }
   if(this.method=="GET"){
     r.send(null);
@@ -706,7 +739,11 @@ handleReturn = function() {
   for( var k=0; k<ajax.length; k++ ) {
     if (ajax[k].r==null) { ajax.splice(k--,1); continue; }
     if ( ajax[k].r.readyState== 4) { 
-      var data = ajax[k].r.responseText.split(/__pjx__/);
+      var rsp = ajax[k].r.responseText;  /* the response from perl */
+      var splitval = '__pjx__';  /* to split text */
+      /* fix IE problems with undef values in an Array getting squashed*/
+      rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval);
+      var data = rsp.split(splitval);  
       dt = ajax[k].dt;
       if (dt.constructor != Array) { dt=[dt]; }
       if (data.constructor != Array) { data=[data]; }
@@ -734,14 +771,14 @@ handleReturn = function() {
 };
 
 pjx.prototype.getURL=function(fname) {
-  args = this.args;
-  url= 'fname=' + fname;
+  var args = this.args;
+  var url= 'fname=' + fname;
   for (var i=0;i<args.length;i++) {
     url=url + args[i];
   }
   return url;
 };
-ghr=getghr();
+var ghr=getghr();
 function getghr(){
     if(typeof XMLHttpRequest != "undefined")
     {
@@ -762,6 +799,17 @@ function getghr(){
      }
      return false;
 }
+
+
+function jsdebug(){
+    var tmp = document.getElementById('pjxdebugrequest').innerHTML = "<br><pre>";
+    for( var i=0; i < ajax.length; i++ ) {
+      tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
+      decodeURIComponent(ajax[i].url) + ' </a><br>';
+    }
+    document.getElementById('pjxdebugrequest').innerHTML = tmp + "</pre>";
+}
+
 EOT
 
   my $sig = <<EOS;
@@ -774,7 +822,9 @@ EOT
 //
 EOS
 
-  $rv = $self->compress_js($rv);
+  if ( $self->JSDEBUG() <= 1 ) {
+    $rv = $self->compress_js($rv);
+  }
 
   return($sig . $rv);
 }
@@ -819,7 +869,7 @@ sub insert_js_in_head{
   my $js = $self->show_javascript();
 
   if ( $self->JSDEBUG() ) {
-    my $showurl=qq!<br/><div id='__pjxrequest'></div><br/>!;
+    my $showurl=qq!<br/><div id='pjxdebugrequest'></div><br/>!;
     # find the terminal </body> so we can insert just before it
     my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
     $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
@@ -946,18 +996,15 @@ sub make_function {
   return("") if not defined $func_name;
   return("") if $func_name eq "";
   my $rv = "";
+  my $script = $0;
+  $script =~ s/.*\/(.+)$/$1/;
   my $outside_url = $self->url_list()->{ $func_name };
-  my $url = defined $outside_url ? "'$outside_url'" : "window.location.toString()";
+  my $url = defined $outside_url ? $outside_url : $script;
+  if ($url =~ /\?/) { $url.='&'; } else {$url.='?'}
+  $url = "'$url'";
   my $jsdebug = "";
   if ( $self->JSDEBUG()) {
-    $jsdebug .= <<EOT;
-    var tmp = document.getElementById('__pjxrequest').innerHTML = "<br><pre>";
-    for( var i=0; i < ajax.length; i++ ) {
-      tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
-      decodeURIComponent(ajax[i].url) + ' </a><br>';
-    }
-    document.getElementById('__pjxrequest').innerHTML = tmp + "</pre>";
-EOT
+    $jsdebug = "jsdebug()";
   }
 
   #create the javascript text
@@ -967,18 +1014,11 @@ function $func_name() {
   for( var i=0; i<args[0].length;i++ ) {
     args[0][i] = fnsplit(args[0][i]);
   }
-  method="GET";
-  if( args.length==3 && (args[2]=="POST"||args[2]=="post") ) {
-    method="POST";
-  }
-  ajax.push(new pjx(args,"$func_name",method));
-  var l = ajax.length-1;
-  var sep = '?';
-
-  if ( $url.indexOf('?') != -1) { sep = '&'; }
-  ajax[l].url = $url + sep + ajax[l].url;
+  var l = ajax.length;
+  ajax[l]= new pjx(args,"$func_name",args[2]);
+  ajax[l].url = $url + ajax[l].url;
   ajax[l].send2perl();
-  $jsdebug
+  $jsdebug;
 }
 EOT
 
@@ -1013,13 +1053,21 @@ sub register {
 
 =item JSDEBUG()
 
-    Purpose: See the URL that is being generated
+    Purpose: Show the AJAX URL that is being generated, and stop
+             compression of the generated javascript, both of which can aid
+             during debugging.  If set to 1, then the core js will get
+             compressed, but the user-defined functions will not be
+             compressed.  If set to 2 (or anything greater than 1 or 0), 
+             then none of the javascript will get compressed.
+
   Arguments: JSDEBUG(0); # turn javascript debugging off
-             JSDEBUG(1); # turn javascript debugging on
+             JSDEBUG(1); # turn javascript debugging on, some javascript compression
+             JSDEBUG(2); # turn javascript debugging on, no javascript compresstion
     Returns: prints a link to the url that is being generated automatically by
              the Ajax object. this is VERY useful for seeing what
              CGI::Ajax is doing. Following the link, will show a page
              with the output that the page is generating.
+             
   Called By: $pjx->JSDEBUG(1) # where $pjx is a CGI::Ajax object;
 
 =item DEBUG()

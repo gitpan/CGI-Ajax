@@ -232,3 +232,48 @@ Revision history for Perl module CGI::Perljax
   warning
 
   Updated to 0.67
+
+0.68 | bcthomas | 2005-12-09 11:51:25
+
+	changed splitargs.pl
+
+	added value="" to <input>'s getting the return values from the
+	function call to stop weird javascript warning
+
+	Fixed docs in Ajax.pm to reflect the old way of dealing with arguments
+	array in javascript, after brent's fix of this code.  Updated changes,
+	and MANIFEST.
+
+	Added ability to prevent caching (though firefox doesn't seem to cache
+	anyway).  The keyword is 'NO_CACHE'.
+
+	Added to example scripts pjx_NO_CACHE_callee.pl and
+	pjx_NO_CACHE_caller.pl, to demonstrate how no caching works.
+
+	Fixed IE bug where __pjx____pjx__ doesn't return "" as the second split. 
+
+	Took a suggestion by 'qbxk' from the perljax.us forums and changed
+	the javascript code so only the function names remain the same. 
+	Also rearranged code for javascript jsdebug() so it cuts down the
+	amout of code.  Moved getting the script name to Perl code.
+	OVerall, these changes result in less repetition in the javascript
+	functions.  The URL length only includes the script name if it is
+	calling itself.
+
+	POD cleanup and additions.  Added extra level to JSDEBUG to uncompress
+	ALL generated javascript.  Changed around some js varable names to be
+	more understandable.
+
+	Corrected several of the demo scripts to not use the original method
+	of setting the div id to return results to...
+
+	onkeyup=myfunc(['in1'],'out1')
+	
+	should be..
+
+	onkeyup=myfunc(['in1'],['out1'])
+
+	(thanks Jerrod)
+
+	Modified Changes and MANIFEST.  Changed comments in Todo and README.
+	Update version to 0.68

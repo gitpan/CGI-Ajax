@@ -1,9 +1,8 @@
 TODO list for Perl module CGI::Perljax
 
-add more docs for DEBUG() and JSDEBUG()
+More docs.
 
-Add brents pjx_regexp.pl example
-
-More docs
+Add ability to override default param name of 'fname' if the user
+desires.
 
 

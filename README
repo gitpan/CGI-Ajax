@@ -12,7 +12,7 @@ perl functions/methods. Perljax unburdens the user from having to
 write any javascript, except for having to associate an exported
 method with a document-defined event (such as onClick, onKeyUp,
 etc). Only in the more advanced implementations of a exported perl
-method would a user need to write any javascript. Perljax supports
+method would a user need to write custom javascript. Perljax supports
 methods that return single results, or multiple results to the web
 page. No other projects that we know of are like Perljax for the
 following reasons: 1. Perljax is targeted specifically for perl
@@ -38,4 +38,4 @@ mod_perl's default behavior, and also assuming you use mod_perl, and
 not just run perl as a CGI).
 
 Example scripts are provided in the source script directory, and can
-also be seen on the project's website, http://pjax.sourceforge.net.
+also be seen on the project's website, http://www.perljax.us.
