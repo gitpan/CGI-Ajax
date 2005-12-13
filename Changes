@@ -277,3 +277,7 @@ Revision history for Perl module CGI::Perljax
 
 	Modified Changes and MANIFEST.  Changed comments in Todo and README.
 	Update version to 0.68
+
+0.681 | bpederse | 2005-12-12 15:22:32
+
+  fixed the $script regular expression to work on windows;

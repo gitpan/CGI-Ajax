@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .68;
+    $VERSION     = .681;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -997,7 +997,7 @@ sub make_function {
   return("") if $func_name eq "";
   my $rv = "";
   my $script = $0;
-  $script =~ s/.*\/(.+)$/$1/;
+  $script =~ s/.*[\/|\\](.+)$/$1/;
   my $outside_url = $self->url_list()->{ $func_name };
   my $url = defined $outside_url ? $outside_url : $script;
   if ($url =~ /\?/) { $url.='&'; } else {$url.='?'}
