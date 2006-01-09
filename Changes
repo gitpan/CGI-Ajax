@@ -281,3 +281,19 @@ Revision history for Perl module CGI::Perljax
 0.681 | bpederse | 2005-12-12 15:22:32
 
   fixed the $script regular expression to work on windows;
+
+0.682 | bcthomas | 2006-01-09 09:41
+
+	switched from encodeURIComponent to encodeURI
+
+	fixed getVal to have better error checking, plus more inuitive code.
+	also, use can now use name= (but getVal still looks for id= first)
+	to send in the html element name. all code changes in javascript
+	getVal();  This fix should alleviate mistakes where your HTML
+	elements don't have an "id" defined, but do have a "name" defined.
+
+	Rewrote docs in several areas.  Removed gratuitous acks in javascript
+	code.
+
+	Added documentation about returning multiple arguments from perl to a
+	javascript function.

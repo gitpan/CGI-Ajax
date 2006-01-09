@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .681;
+    $VERSION     = .682;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -14,8 +14,8 @@ BEGIN {
 
 =head1 NAME
 
-CGI::Ajax - a perl-specific system for writing AJAX- or DHTML-based
-web applications (formerly known as the module CGI::Perljax).
+CGI::Ajax - a perl-specific system for writing Asynchronous web
+applications
 
 =head1 SYNOPSIS
 
@@ -57,27 +57,27 @@ directory of the distribution.>
 
 CGI::Ajax is an object-oriented module that provides a unique
 mechanism for using perl code asynchronously from javascript-
-enhanced web pages.  You would commonly use CGI::Ajax in
-AJAX/DHTML-based web applications.  CGI::Ajax unburdens the user
-from having to write extensive javascript, except for associating
-an exported method with a document-defined event (such as onClick,
-onKeyUp, etc). Only in the more advanced implementations of an
-exported perl method would a user need to write any javascript.
+enhanced HTML pages.  CGI::Ajax unburdens the user from having to
+write extensive javascript, except for associating an exported
+method with a document-defined event (such as onClick, onKeyUp,
+etc).  CGI::Ajax also mixes well with HTML containing more complex
+javascript.
 
-CGI::Ajax supports methods that return single results, or multiple
+CGI::Ajax supports methods that return single results or multiple
 results to the web page, and supports returning values to multiple
 DIV elements on the HTML page.
 
-Using CGI::Ajax, the URL for the HTTP GET request is automatically
-generated based on HTML layout and events, and the page is then
-dynamically updated.  We also have support for mapping URL's to a
+Using CGI::Ajax, the URL for the HTTP GET/POST request is
+automatically generated based on HTML layout and events, and the
+page is then dynamically updated with the output from the perl
+function.  Additionally, CGI::Ajax supports mapping URL's to a
 CGI::Ajax function name, so you can separate your code processing
 over multiple scripts.
 
 Other than using the Class::Accessor module to generate CGI::Ajax'
-accessor methods, CGI::Ajax is completely self-contained -
-it does not require you to install a larger package or a full
-Content Management System, etc.
+accessor methods, CGI::Ajax is completely self-contained - it
+does not require you to install a larger package or a full Content
+Management System, etc.
 
 We have added I<support> for other CGI handler/decoder modules,
 like L<CGI::Simple> or L<CGI::Minimal>, but we can't test these
@@ -93,13 +93,15 @@ methods for deploying CGI::Ajax. And VERY little user javascript.
 =head1 EXAMPLES
 
 The CGI::Ajax module allows a Perl subroutine to be called
-asynchronously.  To do this, it must be I<exported>:
+asynchronously, when triggered from a javascript event on the
+HTML page.  To do this, the subroutine must be I<registered>,
+usually done during:
 
   my $pjx = new CGI::Ajax( 'JSFUNC' => \&PERLFUNC );
 
 This maps a perl subroutine (PERLFUNC) to an automatically
-generated Javascript function (JSFUNC).  Next you setup an HTML
-event to call the new Javascript function:
+generated Javascript function (JSFUNC).  Next you setup a trigger this
+function when an event occurs (e.g. "onClick"):
 
   onClick="JSFUNC(['source1','source2'], ['dest1','dest2']);"
 
@@ -107,6 +109,9 @@ where 'source1', 'dest1', 'source2', 'dest2' are the DIV ids of
 HTML elements in your page...
 
   <input type=text id=source1>
+  <input type=text id=source2>
+  <div id=dest1></div>
+  <div id=dest2></div>
 
 L<CGI::Ajax> sends the values from source1 and source2 to your
 Perl subroutine and returns the results to dest1 and dest2.
@@ -165,7 +170,7 @@ html, or from a coderef that returns the html, or from a function
   <BODY>
     Enter a number:&nbsp;
     <input type="text" name="somename" id="val1" size="6"
-       onkeyup="evenodd( ['val1'], ['resultdiv'] );">
+       OnKeyUp="evenodd( ['val1'], ['resultdiv'] );">
     <br>
     <hr>
     <div id="resultdiv">
@@ -176,22 +181,19 @@ EOT
     return $html;
   }
 
-Note how we reference the exported subroutine in the C<OnKeyup>
-event handler.  The subroutine takes one value from the form,
-the element B<'val1'>, and returns the the result to an HTML
-div element with an id of B<'resultdiv'>.  Sending in the input
-id in an array format is required to support multiple inputs,
-and similarly, to output multiple the results, you can use an
-array for the output divs, but this isn't mandatory - as will be
-explained in the B<Advanced> usage.
+The exported Perl subrouting is triggered using the C<OnKeyUp>
+event handler of the input HTML element.  The subroutine takes one
+value from the form, the input element B<'val1'>, and returns the
+the result to an HTML div element with an id of B<'resultdiv'>.
+Sending in the input id in an array format is required to support
+multiple inputs, and similarly, to output multiple the results,
+you can use an array for the output divs, but this isn't mandatory -
+as will be explained in the B<Advanced> usage.
 
-Now create a CGI object...
-
-  my $cgi = new CGI();
-
-And finally we create a CGI::Ajax object, associating a reference
+Now create a CGI object and a CGI::Ajax object, associating a reference
 to our subroutine with the name we want available to javascript.
 
+  my $cgi = new CGI();
   my $pjx = new CGI::Ajax( 'evenodd' => \&evenodd_func );
 
 And if we used a coderef, it would look like this...
@@ -305,6 +307,25 @@ Similary, if the external script required a constant as input
 In both of the above examples, the result from the external
 script would get placed into the I<resultdiv> element on our
 (the calling script's) page.
+
+If you are sending more than one argument from an external perl
+script back to a javascript function, you will need to split the
+string (AJAX applications communicate in strings only) on something.
+Internally, we use '__pjx__', and this string is checked for.  If
+found, L<CGI::Ajax> will automatically split it.  However, if you
+don't want to use '__pjx__', you can do it yourself:
+
+For example, from your Perl script, you would...
+
+	return("A|B"); # join with "|"
+
+and then in the javascript function you would have something like...
+
+	process_func() {
+		var arr = arguments[0].split("|");
+		// arr[0] eq 'A'
+		// arr[1] eq 'B'
+	}
 
 In order to rename parameters, in case the outside script needs
 specifically-named parameters and not CGI::Ajax' I<'args'> default
@@ -482,7 +503,7 @@ sub build_html {
           $html .= $self->cgi_header_extra();
           $html .= "\n\n";
         }
-        $html .= qq!<html><body><h2>Problems</h2> with
+        $html .= qq!<html><head><title></title></head><body><h2>Problems</h2> with
           the html-generating function sent to CGI::Ajax
           object</body></html>!;
         return $html;
@@ -659,7 +680,12 @@ function pjx(args,fname,method) {
 function getVal(id) {
   if (id.constructor == Function ) { return id; }
   if (typeof(id)!= 'string') { return id; }
-  var element = document.getElementById(id);
+  var element = document.getElementById(id) || document.forms[0].elements[id];
+  if(!element){
+     alert('ERROR: Cant find HTML element with id or name: ' +
+     id+'. Check that an element with name or id='+id+' exists');
+     return 0;
+  }
   if (element.type == 'select-multiple') {
   var ans = new Array();
     for (var i=0;i<element.length;i++) {
@@ -680,35 +706,28 @@ function getVal(id) {
     }
     return ans;
   }
-  try {
-    return element.value.toString();
-  } catch(e) {
-    try {
-      return element.innerHTML.toString();
-    } catch(e) {
-      var errstr = 'ERROR: cant get html element with id:' +
-      id + '.  Check that an element with id=' + id + ' exists';
-      alert(errstr);
-      return false;
-    }
+  if(element.type=='div'){
+    return element.innerHTML;
+  }else{
+    return element.value;
   }
 }
 
 function fnsplit(arg) {
   var arg2="";
-  if (arg == 'NO_CACHE') { return '&_pjxrand_='  + Math.random() }
+  if (arg == 'NO_CACHE') { return '&pjxrand='  + Math.random() }
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
-    arg2 += '&' + arga[0] +'='+ encodeURIComponent(arga[1]);
+    arg2 += '&' + arga[0] +'='+ encodeURI(arga[1]);
   } else {
     var ans = getVal(arg);
     if ( typeof ans != 'string' ) {
       if ( ans.length == 0 ) { arg2 += '&args=&' + arg + '='; }
       for (var i=0;i < ans.length;i++) {
-        arg2 += '&args=' + encodeURIComponent(ans[i]) + '&' + arg + '=' + encodeURIComponent(ans[i]);
+        arg2 += '&args=' + encodeURI(ans[i]) + '&' + arg + '=' + encodeURI(ans[i]);
       }
     } else {
-      arg2 += '&args=' + encodeURIComponent(ans) + '&' + arg + '=' + encodeURIComponent(ans);;
+      arg2 += '&args=' + encodeURI(ans) + '&' + arg + '=' + encodeURI(ans);;
     }
   }
   return arg2;
@@ -805,28 +824,18 @@ function jsdebug(){
     var tmp = document.getElementById('pjxdebugrequest').innerHTML = "<br><pre>";
     for( var i=0; i < ajax.length; i++ ) {
       tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
-      decodeURIComponent(ajax[i].url) + ' </a><br>';
+      decodeURI(ajax[i].url) + ' </a><br>';
     }
     document.getElementById('pjxdebugrequest').innerHTML = tmp + "</pre>";
 }
 
 EOT
 
-  my $sig = <<EOS;
-//
-// created by:
-// Brian C. Thomas bct.x42\@gmail.com
-// Brent Pedersen bpederse\@gmail.com
-// distributed under the Perl Artistic license
-// See LICENSE file included
-//
-EOS
-
   if ( $self->JSDEBUG() <= 1 ) {
     $rv = $self->compress_js($rv);
   }
 
-  return($sig . $rv);
+  return($rv);
 }
 
 # sub compress_js()
