@@ -20,5 +20,7 @@ scripts/convert_degrees.pl
 scripts/pjx_splitargs.pl
 scripts/pjx_NO_CACHE_callee.pl
 scripts/pjx_NO_CACHE_caller.pl
+scripts/pjx_JSON.pl
+scripts/pjx_JSON_out.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

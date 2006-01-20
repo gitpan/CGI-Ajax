@@ -297,3 +297,11 @@ Revision history for Perl module CGI::Perljax
 
 	Added documentation about returning multiple arguments from perl to a
 	javascript function.
+
+0.683 | bpederse | 2006-01-20 13:27:43
+
+  Add scripts to show the use of JSON objects.
+	Fixed radio and multiple-select (slight error);
+	Cleaned up fnsplit.
+
+	version to 0.683

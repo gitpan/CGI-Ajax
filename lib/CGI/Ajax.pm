@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .682;
+    $VERSION     = .683;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -687,10 +687,11 @@ function getVal(id) {
      return 0;
   }
   if (element.type == 'select-multiple') {
-  var ans = new Array();
+  var ans = [];
+  var k =0;
     for (var i=0;i<element.length;i++) {
       if (element[i].selected) {
-        ans.push(element[i].value);
+        ans[k++]=element[i].value;
       }
     }
     return ans;
@@ -699,9 +700,10 @@ function getVal(id) {
     var ans =[];
     var elms = document.getElementsByTagName('input');
     var endk = elms.length;
+    var i =0;
     for(var k=0;k<endk;k++){
       if(elms[k].type=='radio' && elms[k].checked && elms[k].id==id){
-        ans.push(elms[k].value);
+        ans[i++]=elms[k].value;
       }
     }
     return ans;
@@ -714,23 +716,19 @@ function getVal(id) {
 }
 
 function fnsplit(arg) {
-  var arg2="";
-  if (arg == 'NO_CACHE') { return '&pjxrand='  + Math.random() }
+  var url="";
+  if(arg=='NO_CACHE'){return'&pjxrand='+Math.random()}
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
-    arg2 += '&' + arga[0] +'='+ encodeURI(arga[1]);
+    url += '&' + arga[0] +'='+ encodeURI(arga[1]);
   } else {
-    var ans = getVal(arg);
-    if ( typeof ans != 'string' ) {
-      if ( ans.length == 0 ) { arg2 += '&args=&' + arg + '='; }
-      for (var i=0;i < ans.length;i++) {
-        arg2 += '&args=' + encodeURI(ans[i]) + '&' + arg + '=' + encodeURI(ans[i]);
-      }
-    } else {
-      arg2 += '&args=' + encodeURI(ans) + '&' + arg + '=' + encodeURI(ans);;
+    var res = getVal(arg) || '';
+    if(res.constructor != Array){ res = [res] }
+    for(var i=0;i<res.length;i++) {
+      url += '&args=' + encodeURI(res[i]) + '&' + arg + '=' + encodeURI(res[i]);
     }
   }
-  return arg2;
+  return url;
 }
 
 pjx.prototype.send2perl=function() {
