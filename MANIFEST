@@ -22,5 +22,7 @@ scripts/pjx_NO_CACHE_callee.pl
 scripts/pjx_NO_CACHE_caller.pl
 scripts/pjx_JSON.pl
 scripts/pjx_JSON_out.pl
+scripts/pjx_loading.pl
+scripts/pjx_formDump.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

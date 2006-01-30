@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .683;
+    $VERSION     = .684;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -677,8 +677,20 @@ function pjx(args,fname,method) {
   this.url = this.getURL(fname);
 }
 
+function formDump(){
+  var all = [];
+  var fL = document.forms.length;
+  for(var f = 0;f<fL;f++){
+    var els = document.forms[f].elements;
+    for(var e in els){
+      var tmp = els[e].id || els[e].name;
+      if(tmp){ all[all.length]=tmp}
+    }
+  }
+  return all;
+}
 function getVal(id) {
-  if (id.constructor == Function ) { return id; }
+  if (id.constructor == Function ) { return id(); }
   if (typeof(id)!= 'string') { return id; }
   var element = document.getElementById(id) || document.forms[0].elements[id];
   if(!element){
@@ -714,10 +726,12 @@ function getVal(id) {
     return element.value;
   }
 }
-
+function \$(arg){
+  return getVal(arg);
+}
 function fnsplit(arg) {
   var url="";
-  if(arg=='NO_CACHE'){return'&pjxrand='+Math.random()}
+  if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()}
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
     url += '&' + arga[0] +'='+ encodeURI(arga[1]);

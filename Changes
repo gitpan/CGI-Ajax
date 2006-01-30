@@ -305,3 +305,20 @@ Revision history for Perl module CGI::Perljax
 	Cleaned up fnsplit.
 
 	version to 0.683
+
+0.684 | bpederse | 2006-01-28
+
+	added pjx_loading.pl script.
+
+	added function formDump() which returns an array of all form element
+	names/ids in the page and sends them to the function:
+
+	onclick=jsFunc(formDump(),['out'])
+
+	add pjx_formDump.pl to the scripts directory documneting use.
+	also changed getVal so that if you send in a function, it will
+	return the result of the function, not hte function itself.
+
+	also added $() and an alias to getVal() to follow prototype.js
+	but, might be a bad idea since even in the HERE delimiters '>>'
+	you have to escape the '$'..
