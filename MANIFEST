@@ -24,5 +24,7 @@ scripts/pjx_JSON.pl
 scripts/pjx_JSON_out.pl
 scripts/pjx_loading.pl
 scripts/pjx_formDump.pl
+scripts/pjx_change_encoding.pl
+scripts/pjx_change_headers.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

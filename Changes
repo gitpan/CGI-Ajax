@@ -322,3 +322,45 @@ Revision history for Perl module CGI::Perljax
 	also added $() and an alias to getVal() to follow prototype.js
 	but, might be a bad idea since even in the HERE delimiters '>>'
 	you have to escape the '$'..
+
+0.69 (105) | bcthomas | 2006-02-16
+
+	fixed typo in pjx_chained.pl
+	Updated MANIFEST/Changes for release 0.684
+
+  Added support for spans
+
+  Added callback methods in javascript: pjx.prototype.pjxInitialized
+  and pjx.prototype.pjxCompleted These methods are called before
+  and after, respectively, any xmlhttp request.  It was much
+  more responsive this way rather than providing a hook into each
+  readyState, especially since there is not uniform support for
+  the various readyStates in the common browsers.
+
+  Changed the pjx_loading.pl script to use the above callbacks, and
+  documented it.
+
+  Switched from prototype to javascript object notation.  This is
+  cosmetic, and only changes the way the code looks, not the way it
+  functions.
+
+  Added the ability to change the encoding that CGI::Ajax uses on input
+  elements.  The default is encodeURIComponent, but this can be set to
+  encode, etc., like so...
+
+  $pjx->js_encode_function('escape'); 
+
+  ...where 'escape' can be any of ('escape','encodeURI','encodeURIComponent')
+  or a programmer-defined javascript function.
+
+  altered MANIFEST to add two new scripts
+    scripts/pjx_change_encoding.pl
+    scripts/pjx_change_headers.pl
+
+  Rearranged Class::Accessor initialization.
+
+
+  Fixed select problem mentioned on forums, and changed pjx_formDump.pl as a
+  test for that fix.
+
+  updated to 0.69

@@ -41,7 +41,7 @@ my $Show_Form = sub {
 <input type=text id="out2">
 
 
-<form>
+</form>
 </BODY>
 </HTML>
 EOT

@@ -1,16 +1,20 @@
 package CGI::Ajax;
 use strict;
+use Data::Dumper;
 use base qw(Class::Accessor);
 use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
-    use vars qw ($VERSION @ISA);
-    $VERSION     = .684;
-    @ISA         = qw(Class::Accessor);
+	use vars qw ($VERSION @ISA @METHODS);
+	@METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
+								js_encode_function cgi_header_extra);
+
+	CGI::Ajax->mk_accessors( @METHODS );
+
+	$VERSION     = .69;
 }
 
 ########################################### main pod documentation begin ##
-
 
 =head1 NAME
 
@@ -440,11 +444,10 @@ of processing for the rest of your parameters.
   Called By: originating cgi script
 
 =cut
-
 sub build_html {
   my ( $self, $cgi, $html_source, $cgi_header_extra ) = @_;
 
-  if ( ref( $cgi ) =~ /CGI*/ ) {
+  if ( ref( $cgi ) =~ /CGI.*/ ) {
     if ( $self->DEBUG() ) {
       print STDERR "CGI::Ajax->build_html: CGI* object was received\n";
     }
@@ -469,14 +472,16 @@ sub build_html {
   if ( defined $self->cgi()->param("fname") ) {
     # it was, so just return the html from the handled request
     return ( $self->handle_request() );
-  } else {
-    
+  }
+  else {
     # start with the minimum, a http header line and any extra cgi
     # header params sent in
     my $html = "";
     if ( $self->cgi()->can('header') ) {
+      #$html .= $self->cgi()->header();
       $html .= $self->cgi()->header( $self->cgi_header_extra() );
-    } else {
+    }
+    else {
       # don't have an object with a "header()" method, so just create
       # a mimimal one
       $html .= "Content-Type: text/html;";
@@ -496,7 +501,8 @@ sub build_html {
         # that was sent in, so generate an error page
         if ( $self->cgi()->can('header') ) {
           $html = $self->cgi()->header( $self->cgi_header_extra() );
-        } else {
+        }
+        else {
           # don't have an object with a "header()" method, so just create
           # a mimimal one
           $html = "Content-Type: text/html;";
@@ -509,7 +515,8 @@ sub build_html {
         return $html;
       }
       $self->html($html);    # no problems, so set html
-    } else {
+    }
+    else {
       # user must have sent in raw html, so add it
       if ( $self->DEBUG() ) {
         print STDERR "CGI::Ajax->build_html: html_source is HTML\n";
@@ -555,7 +562,7 @@ sub show_javascript {
 sub new {
   my ($class) = shift;
   my $self = bless ({}, ref ($class) || $class);
-  $self->mk_accessors( qw(url_list coderef_list DEBUG JSDEBUG html ) );
+#  $self->SUPER::new();
   $self->JSDEBUG(0); # turn javascript debugging off (if on,
                      # extra info will be added to the web page output
                      # if set to 1, then the core js will get
@@ -567,11 +574,15 @@ sub new {
   $self->DEBUG(0);   # turn debugging off (if on, check web logs)
 
   #accessorized attributes
-  $self->{coderef_list} = {};
-  $self->{url_list} = {};
-  $self->{html} = undef;
-  $self->{cgi} = undef;
-  $self->{cgi_header_extra} = {};
+  $self->coderef_list({});
+  $self->url_list({});
+  #$self->html("");
+  #$self->cgi();
+  #$self->cgi_header_extra(""); # set cgi_header_extra to an empty string
+
+  # setup a default endcoding; if you need support for international
+	# charsets, use 'escape' instead of encodeURIComponent
+  $self->js_encode_function('encodeURIComponent');
 
   if ( @_ < 2 ) {
     die "incorrect usage: must have fn=>code pairs in new\n";
@@ -618,10 +629,11 @@ sub cgiobj {
     # add support for other CGI::* modules This requires that your web server
     # be configured properly.  I can't test anything but a mod_perl2
     # setup, so this prevents me from testing CGI::Lite,CGI::Simple, etc.
-    if ( ref($cgi) =~ /CGI*/ ) {
+    if ( ref($cgi) =~ /CGI.*/ ) {
+      print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
       $self->{'cgi'} = $cgi;
     } else {
-      die "CGI::Ajax -- Can't set internal CGI object to a non-CGI object\n";
+      die "CGI::Ajax -- Can't set internal CGI object to a non-CGI object ($cgi)\n";
     }
   }
   # return the object
@@ -637,21 +649,52 @@ sub cgi {
   }
 }
 
-# sub cgi_header_extra
-#
-#    Purpose: accessor method to associate CGI header information
-#             with the CGI::Ajax object
-#  Arguments: a hashref with key=>value pairs that get handed off to
-#             the CGI object's header() method
-#    Returns: hashref of extra cgi header params
-#  Called By: originating cgi script, or build_html()
+## # sub cgi_header_extra
+## #
+## #    Purpose: accessor method to associate CGI header information
+## #             with the CGI::Ajax object
+## #  Arguments: a hashref with key=>value pairs that get handed off to
+## #             the CGI object's header() method
+## #    Returns: hashref of extra cgi header params
+## #  Called By: originating cgi script, or build_html()
+## 
+## sub cgi_header_extra {
+##   my $self = shift;
+##   if ( @_ ) {
+##     $self->{'cgi_header_extra'} = shift;
+##   }
+##   return( $self->{'cgi_header_extra'} );
+## }
 
-sub cgi_header_extra {
+# sub create_js_setRequestHeader
+#
+#    Purpose: create text of the header for the javascript side,
+#             xmlhttprequest call
+#  Arguments: none
+#    Returns: text of header to pass to xmlhttpreq call so it will
+#             match whatever was setup for the main web-page
+#  Called By: originating cgi script, or build_html()
+#
+
+sub create_js_setRequestHeader {
   my $self = shift;
-  if ( @_ ) {
-    $self->{'cgi_header_extra'} = shift;
-  }
-  return( $self->{'cgi_header_extra'} );
+  my $cgi_header_extra = $self->cgi_header_extra();
+  my $js_header_string = q{r.setRequestHeader("};
+	#$js_header_string .= $self->cgi()->header( $cgi_header_extra );
+	$js_header_string .= $self->cgi()->header();
+  $js_header_string .= q{");};
+	#if ( ref $cgi_header_extra eq "HASH" ) {
+	#	foreach my $k ( keys(%$cgi_header_extra) ) {
+	#		$js_header_string .= $self->cgi()->header($cgi_headers) 
+	#	}
+	#} else {
+  #print STDERR  $self->cgi()->header($cgi_headers) ;
+  
+	if ( $self->DEBUG() ) {
+		print STDERR "js_header_string is (", $js_header_string, ")\n";
+	}
+
+  return($js_header_string);
 }
 
 # sub show_common_js()
@@ -665,10 +708,13 @@ sub cgi_header_extra {
 
 sub show_common_js {
   my $self = shift;
+  my $encodefn = $self->js_encode_function();
+  #my $request_header_str = $self->create_js_setRequestHeader();
+  my $request_header_str = "";
   my $rv = <<EOT;
 var ajax = [];
 function pjx(args,fname,method) {
-  this.dt=args[1];
+  this.target=args[1];
   this.args=args[0];
   method=(method)?method:'GET';
   if(method=='post'){method='POST';}
@@ -698,7 +744,7 @@ function getVal(id) {
      id+'. Check that an element with name or id='+id+' exists');
      return 0;
   }
-  if (element.type == 'select-multiple') {
+  if (element.type == 'select-multiple' || element.type=='select') {
   var ans = [];
   var k =0;
     for (var i=0;i<element.length;i++) {
@@ -720,95 +766,104 @@ function getVal(id) {
     }
     return ans;
   }
-  if(element.type=='div'){
+  if(element.type=='div' || (element.tagName && element.tagName.toUpperCase()=='SPAN')){
     return element.innerHTML;
   }else{
     return element.value;
   }
-}
-function \$(arg){
-  return getVal(arg);
 }
 function fnsplit(arg) {
   var url="";
   if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()}
   if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
-    url += '&' + arga[0] +'='+ encodeURI(arga[1]);
+    url += '&' + arga[0] +'='+ $encodefn(arga[1]);
   } else {
     var res = getVal(arg) || '';
     if(res.constructor != Array){ res = [res] }
     for(var i=0;i<res.length;i++) {
-      url += '&args=' + encodeURI(res[i]) + '&' + arg + '=' + encodeURI(res[i]);
+      url += '&args=' + $encodefn(res[i]) + '&' + arg + '=' + $encodefn(res[i]);
     }
   }
   return url;
 }
 
-pjx.prototype.send2perl=function() {
-  var r = this.r;
-	var dt = this.dt;
-  var url=this.url;
-  var postdata;
-  if(this.method=="POST"){
-    var idx=url.indexOf('?');
-    postdata = url.substr(idx+1);
-    url = url.substr(0,idx);
+pjx.prototype =  {
+  send2perl : function(){
+    var r = this.r;
+    var dt = this.target;
+    this.pjxInitialized(dt);
+    var url=this.url;
+    var postdata;
+    if(this.method=="POST"){
+      var idx=url.indexOf('?');
+      postdata = url.substr(idx+1);
+      url = url.substr(0,idx);
+    }
+    r.open(this.method,url,true);
+    $request_header_str;
+    if(this.method=="POST"){
+      r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      r.send(postdata);
+    }
+    if(this.method=="GET"){
+      r.send(null);
+    }
+    r.onreadystatechange = handleReturn;
+ },
+ pjxInitialized : function(){},
+ pjxCompleted : function(){},
+ readyState4 : function(){
+    var rsp = this.r.responseText;  /* the response from perl */
+    var splitval = '__pjx__';  /* to split text */
+    /* fix IE problems with undef values in an Array getting squashed*/
+    rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval);
+    var data = rsp.split(splitval);  
+    dt = this.target;
+    if (dt.constructor != Array) { dt=[dt]; }
+    if (data.constructor != Array) { data=[data]; }
+    if (typeof(dt[0])!='function') {
+      for ( var i=0; i<dt.length; i++ ) {
+        var div = document.getElementById(dt[i]);
+        if (div.type =='text' || div.type=='textarea' || div.type=='hidden' ) {
+          div.value=data[i];
+        } else{
+          div.innerHTML = data[i];
+        }
+      }
+    } else if (typeof(dt[0])=='function') {
+       var d=data;
+       var str = "dt[0](";
+       for(m=0;m<d.length-1;m++){
+         str+= "d[" + m + "],";
+       }
+       str+="d[" + m +"])";
+       eval(str);
+    }
+    this.pjxCompleted(dt);
+ },
+
+  getURL : function(fname) {
+      var args = this.args;
+      var url= 'fname=' + fname;
+      for (var i=0;i<args.length;i++) {
+        url=url + args[i];
+      }
+      return url;
   }
-  r.open(this.method,url,true);
-  if(this.method=="POST"){
-    r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    r.send(postdata);
-  }
-  if(this.method=="GET"){
-    r.send(null);
-  }
-  r.onreadystatechange=handleReturn;
 };
 
 handleReturn = function() {
   for( var k=0; k<ajax.length; k++ ) {
     if (ajax[k].r==null) { ajax.splice(k--,1); continue; }
     if ( ajax[k].r.readyState== 4) { 
-      var rsp = ajax[k].r.responseText;  /* the response from perl */
-      var splitval = '__pjx__';  /* to split text */
-      /* fix IE problems with undef values in an Array getting squashed*/
-      rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval);
-      var data = rsp.split(splitval);  
-      dt = ajax[k].dt;
-      if (dt.constructor != Array) { dt=[dt]; }
-      if (data.constructor != Array) { data=[data]; }
-      if (typeof(dt[0])!='function') {
-        for ( var i=0; i<dt.length; i++ ) {
-          var div = document.getElementById(dt[i]);
-          if (div.type =='text' || div.type=='textarea' || div.type=='hidden' ) {
-            div.value=data[i];
-          } else{
-            div.innerHTML = data[i];
-          }
-        }
-      } else if (typeof(dt[0])=='function') {
-         var d=data;
-         var str = "dt[0](";
-         for(m=0;m<d.length-1;m++){
-           str+= "d[" + m + "],";
-         }
-         str+="d[" + m +"])";
-         eval(str);
-      }
+      ajax[k].readyState4();
       ajax.splice(k--,1);
+      continue;
     }
   }
 };
 
-pjx.prototype.getURL=function(fname) {
-  var args = this.args;
-  var url= 'fname=' + fname;
-  for (var i=0;i<args.length;i++) {
-    url=url + args[i];
-  }
-  return url;
-};
 var ghr=getghr();
 function getghr(){
     if(typeof XMLHttpRequest != "undefined")
@@ -896,11 +951,11 @@ sub insert_js_in_head{
     $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
   }
 
-  # see if we can match on </head>
-  @shtml= $mhtml =~ /(.*)(<\s*\/\s*head\s*>)(.*)/is;
+  # see if we can match on <head>
+  @shtml= $mhtml =~ /(.*)(<\s*head\s*>)(.*)/is;
   if ( @shtml ) {
     # yes, there's already a <head></head>, so let's insert inside it,
-    # at the end
+    # at the beginning
     $newhtml = $shtml[0].$js.$shtml[1].$shtml[2];
   } elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
     # there's no <head>, so look for the <html> tag, and insert out
@@ -947,6 +1002,7 @@ sub handle_request {
     # don't have an object with a "header()" method, so just create
     # a mimimal one
     $rv = "Content-Type: text/html;";
+    # TODO: 
     $rv .= $self->cgi_header_extra();
     $rv .= "\n\n";
   }

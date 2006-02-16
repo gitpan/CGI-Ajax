@@ -29,6 +29,11 @@ my $Show_Form = sub {
 <input type='text' id='val7' size=9 value='123 fake st'><br/>
 <input type='text' id='val8' size=9 value='some input'><br/>
 <input type='text' id='val9' size=9 value=another><br/>
+<select id='fred'>
+<option value='1234'>1234
+<option value='abcd' SELECTED >abcd
+<option value='zxyw'>zxyw
+</select>
 <br/>
 <button onclick='jsFunc(formDump(),["out"]);return false' > Send In All Form Elements </button>
 <div id="out">
@@ -46,6 +51,6 @@ EOT
 
 
 my $pjx = CGI::Ajax->new( 'jsFunc' => $concatter);
-$pjx->JSDEBUG(1);
+$pjx->JSDEBUG(2);
 $pjx->DEBUG(1);
 print $pjx->build_html($q,$Show_Form); # this outputs the html for the page
