@@ -364,3 +364,9 @@ Revision history for Perl module CGI::Perljax
   test for that fix.
 
   updated to 0.69
+
+0.691 (113) | bpederse | 2006-02-19
+
+	fixed decode-ing
+	if encoding is 'encode*' , decoding is decode*
+	if encoding is escape, decoding is unescape

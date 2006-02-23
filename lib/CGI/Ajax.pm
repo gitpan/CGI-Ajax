@@ -11,7 +11,7 @@ BEGIN {
 
 	CGI::Ajax->mk_accessors( @METHODS );
 
-	$VERSION     = .69;
+	$VERSION     = .691;
 }
 
 ########################################### main pod documentation begin ##
@@ -709,6 +709,9 @@ sub create_js_setRequestHeader {
 sub show_common_js {
   my $self = shift;
   my $encodefn = $self->js_encode_function();
+  my $decodefn = $encodefn;
+  $decodefn =~ s/^(en)/de/;
+  $decodefn =~ s/^(esc)/unesc/;
   #my $request_header_str = $self->create_js_setRequestHeader();
   my $request_header_str = "";
   my $rv = <<EOT;
@@ -730,6 +733,7 @@ function formDump(){
     var els = document.forms[f].elements;
     for(var e in els){
       var tmp = els[e].id || els[e].name;
+      if(typeof tmp != 'string'){continue;}
       if(tmp){ all[all.length]=tmp}
     }
   }
@@ -744,16 +748,17 @@ function getVal(id) {
      id+'. Check that an element with name or id='+id+' exists');
      return 0;
   }
-  if (element.type == 'select-multiple' || element.type=='select') {
+  if (element.type == 'select-multiple' || (element[0] && element[0].type =='checkbox')) {
   var ans = [];
   var k =0;
     for (var i=0;i<element.length;i++) {
-      if (element[i].selected) {
+      if (element[i].selected || element[i].checked ) {
         ans[k++]=element[i].value;
       }
     }
     return ans;
   }
+    
   if(element.type == 'radio'){
     var ans =[];
     var elms = document.getElementsByTagName('input');
@@ -814,7 +819,7 @@ pjx.prototype =  {
  pjxInitialized : function(){},
  pjxCompleted : function(){},
  readyState4 : function(){
-    var rsp = this.r.responseText;  /* the response from perl */
+    var rsp = $decodefn(this.r.responseText);  /* the response from perl */
     var splitval = '__pjx__';  /* to split text */
     /* fix IE problems with undef values in an Array getting squashed*/
     rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval);
