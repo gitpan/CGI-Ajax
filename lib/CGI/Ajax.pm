@@ -11,7 +11,7 @@ BEGIN {
 
 	CGI::Ajax->mk_accessors( @METHODS );
 
-	$VERSION     = .691;
+	$VERSION     = .692;
 }
 
 ########################################### main pod documentation begin ##
@@ -630,7 +630,9 @@ sub cgiobj {
     # be configured properly.  I can't test anything but a mod_perl2
     # setup, so this prevents me from testing CGI::Lite,CGI::Simple, etc.
     if ( ref($cgi) =~ /CGI.*/ ) {
-      print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
+      if ( $self->DEBUG() ) {
+				print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
+      }
       $self->{'cgi'} = $cgi;
     } else {
       die "CGI::Ajax -- Can't set internal CGI object to a non-CGI object ($cgi)\n";

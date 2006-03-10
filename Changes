@@ -370,3 +370,14 @@ Revision history for Perl module CGI::Perljax
 	fixed decode-ing
 	if encoding is 'encode*' , decoding is decode*
 	if encoding is escape, decoding is unescape
+
+
+
+0.692 (116) | bpederse | 2006-03-08
+
+	Wrapped a rogue debugging comment in an appropriate debugging check.
+
+	changed pjx_nobuild to use 'pjxdebugrequest' instead of old
+	'__pjxrequest'
+
+	version to 0.692

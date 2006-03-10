@@ -33,7 +33,7 @@ my $html = "";
   <hr>
   <div id="output_div"></div>
   </FORM>
-  <br/><div id='__pjxrequest'></div><br/>
+  <br/><div id='pjxdebugrequest'></div><br/>
   </BODY>
   </HTML>
 EOT
