@@ -23,19 +23,20 @@ my $divide = sub {
   my $b = shift;
   return $a / $b;
 };
-
+my $G = 'asdf';
 my $Show_Form = sub {
   my $html = "";
-  $html .= <<EOT;
+  $html .= qq!
 <HTML>
 <HEAD><title>CGI::Ajax Multiple Return Value Example</title>
 <script>
   my_call = function(){
    document.getElementById('out1').value = arguments[0];
    call_2();
+   document.getElementById('out3').innerHTML = this.url;
   }
   call_2 =function(){
-   multiply(['val1','val2'],['out2']);
+   multiply(['val1','val2'],['out2'],'POST');
   }
 
 </script>
@@ -44,20 +45,22 @@ my $Show_Form = sub {
 <form>
   Enter Number:
 <input type="text" id="val1" size="6" value=2 
-    onkeyup="divide(['val1','val2'], [my_call]);">
+    onkeyup="divide(['val1','val2','args__$G'], [my_call], 'POST');">
 <input type='text' id='val2' size=6 value=34>
 
 <input type=text id="out1">
-<input type=text id="out2">
+<input type=text id="out2"><br/>
+URL FROM "this" in callback:<div id="out3"> </div>
 
 
 </form>
 </BODY>
 </HTML>
-EOT
+!;
 
   return $html;
 };
+
 
 my $pjx = CGI::Ajax->new( 'multiply' => $multiply, 'divide' => $divide);
 $pjx->JSDEBUG(1);

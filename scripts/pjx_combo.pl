@@ -25,8 +25,8 @@ use vars qw( $data );
 $data = {
   'A' => { '1' => "A1", '2' => "A2", '3' => "A3", '42' => "A42" },
   'B' => { 'green' => "Bgreen", 'red' => "Bred" },
-  'some other thing' => { 'firefly' => "great show" },
-  'final thing' => { 'email' => "chunkeylover53", 'name' => "homer",
+  'something' => { 'firefly' => "great show" },
+  'final_thing' => { 'email' => "chunkeylover53", 'name' => "homer",
                      'address' => "742 Evergreen Terrace" }
 };
 
@@ -38,6 +38,7 @@ my %hash = ( 'SetA'         => \&set_listA,
              'ShowResult'   => \&show_result );
 
 my $pjx = CGI::Ajax->new( %hash ); # this is our CGI::Ajax object
+$pjx->js_encode_function('encodeURIComponent');
 
 $pjx->DEBUG(1);   # turn on debugging
 $pjx->JSDEBUG(1); # turn on javascript debugging, which will place a
@@ -76,38 +77,15 @@ function resetdiv( ) {
 
 </HEAD>
 <BODY onload="resetdiv(); SetA([],['listAdiv']); return true;" >
-  <table>
-  <tr>
-      <td>
-          &nbsp;
-      </td>
-      <td>
-        Single Selection
-      </td>
-      <td style="width: 140px">
-        Multiple Selection
-      </td>
-      <td>
-        Result
-      </td>
-  </tr>
-  <tr>
-      <td>
-          Select something...
-      </td>
-      <td>
+<form>
         <div id="listAdiv"></div>
-      </td>
-      <td><center>
         <div id="listBdiv"></div>
-      </center>
-      </td>
-      <td>
         <div id="resultdiv" style="border: 1px solid black; width: 240px; height: 80px; overflow: auto">
         </div>
-      </td>
-  </tr>
-  </table>
+  <input type="text" name="textfield">
+  <input type="submit" name="Submit" value="Submit" 
+
+  </form>
 </BODY>
 </HTML>
 EOT
@@ -121,11 +99,11 @@ EOT
 sub set_listA {
   # this is the returned text... html to be displayed in the div
   # defined in the javascript call
-  my $txt = qq!<select id="listA" size=3!;
+  my $txt = qq!<select id="listA" name="listA_name" size=3!;
   $txt .= qq! onclick="resetdiv('resultdiv'); SetB( ['listA'], ['listBdiv'] ); return true;">!;
   # get values from $data, could also be a db lookup
   foreach my $topval ( keys %$data ) {
-    $txt .= '<option>' . $topval . "</option>";
+    $txt .= '<option value='. $topval . '>'.  $topval .' </option>';
   }
   $txt .= "</select>";
   print STDERR "set_listA:\n";
@@ -139,12 +117,12 @@ sub set_listB {
 
   # this is the returned text... html to be displayed in the div
   # defined in the javascript call
-  my $txt = qq!<select multiple id="listB" size=3 style="width: 140px"!; 
+  my $txt = qq!<select multiple id="listB" name="listB_name" size=3 style="width: 140px"!; 
   $txt .= qq! onclick="ShowResult( ['listA','listB'], ['resultdiv'] ); return true;">!;
 
   # get values from $data, could also be a db lookup
   foreach my $midval ( keys %{ $data->{ $listA_selection } } ) {
-    $txt .= '<option>' . $midval . "</option>";
+    $txt .= '<option value=' . $midval . '>' . $midval . "</option>";
   }
   $txt .= "</select>";
   print STDERR "set_listB:\n";

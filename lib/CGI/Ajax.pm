@@ -7,11 +7,11 @@ use overload '""' => 'show_javascript'; # for building web pages, so
 BEGIN {
 	use vars qw ($VERSION @ISA @METHODS);
 	@METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
-								js_encode_function cgi_header_extra);
+                js_encode_function cgi_header_extra );
 
 	CGI::Ajax->mk_accessors( @METHODS );
 
-	$VERSION     = .692;
+	$VERSION     = .694;
 }
 
 ########################################### main pod documentation begin ##
@@ -750,7 +750,8 @@ function getVal(id) {
      id+'. Check that an element with name or id='+id+' exists');
      return 0;
   }
-  if (element.type == 'select-multiple' || (element[0] && element[0].type =='checkbox')) {
+   if(element.type == 'select-one') { return element[element.selectedIndex].value } 
+  if (element.type == 'select-multiple') {
   var ans = [];
   var k =0;
     for (var i=0;i<element.length;i++) {
@@ -761,13 +762,13 @@ function getVal(id) {
     return ans;
   }
     
-  if(element.type == 'radio'){
+  if(element.type == 'radio' || element.type == 'checkbox'){
     var ans =[];
     var elms = document.getElementsByTagName('input');
     var endk = elms.length;
     var i =0;
     for(var k=0;k<endk;k++){
-      if(elms[k].type=='radio' && elms[k].checked && elms[k].id==id){
+      if(elms[k].type== element.type && elms[k].checked && elms[k].id==id){
         ans[i++]=elms[k].value;
       }
     }
@@ -839,13 +840,7 @@ pjx.prototype =  {
         }
       }
     } else if (typeof(dt[0])=='function') {
-       var d=data;
-       var str = "dt[0](";
-       for(m=0;m<d.length-1;m++){
-         str+= "d[" + m + "],";
-       }
-       str+="d[" + m +"])";
-       eval(str);
+       dt[0].apply(this,data);
     }
     this.pjxCompleted(dt);
  },
@@ -963,7 +958,7 @@ sub insert_js_in_head{
   if ( @shtml ) {
     # yes, there's already a <head></head>, so let's insert inside it,
     # at the beginning
-    $newhtml = $shtml[0].$js.$shtml[1].$shtml[2];
+    $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
   } elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
     # there's no <head>, so look for the <html> tag, and insert out
     # javascript inside that tag

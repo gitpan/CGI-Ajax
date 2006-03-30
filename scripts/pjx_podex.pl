@@ -37,6 +37,7 @@ sub Show_HTML {
 <HEAD><title>CGI::Ajax Example</title>
 </HEAD>
 <BODY>
+<form>
   Enter a number:&nbsp;
   <input type="text" name="val1" id="val1" size="6"
      onkeyup="evenodd( ['val1'], ['resultdiv'] ); return true;"><br>
@@ -44,6 +45,7 @@ sub Show_HTML {
     <div id="resultdiv" style="border: 1px solid black;
           width: 440px; height: 80px; overflow: auto">
     </div>
+</form>
 </BODY>
 </HTML>
 EOT

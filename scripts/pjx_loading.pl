@@ -40,6 +40,7 @@ pjx.prototype.pjxCompleted = function(el){
 </script>
 </head>
 <body>
+<form>
 Enter Something:&nbsp;
   <input type="text" name="val1" id="val1" size="6" onkeyup="jsfunc( ['val1'], 'result' ); return true;"><br>
 Enter Something:&nbsp;
@@ -52,6 +53,7 @@ Enter Something:&nbsp;
     <div id="another" style="border: 1px solid black;
           width: 440px; height: 80px; overflow: auto">
     </div>
+</form>
 </body>
 </html>
 

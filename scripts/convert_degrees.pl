@@ -15,11 +15,6 @@ if ( defined $q->param('submit') or defined $q->param('Centigrade') or defined $
     $result = $q->param('Kelvin') - 273.15;
   }
   print $result;
-  #print &Show_Form();
-  #print "Result of Conversion is: <b>";
-  #print "<div id='result_div'>", $result, "</div>";
-  #print "</b>\n";
-  #print &Show_Footer();
 } else {
   print &Show_Form();
   print &Show_Footer();

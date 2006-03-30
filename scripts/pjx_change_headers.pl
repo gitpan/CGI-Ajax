@@ -18,6 +18,7 @@ my  $html = <<EOT;
 
 </head>
 <body>
+<form>
 Enter Something:&nbsp;
   <input type="text" name="val1" id="val1" size="6" onkeyup="jsfunc( ['val1'], 'result' ); return true;"><br>
 Enter Something:&nbsp;
@@ -26,6 +27,7 @@ Enter Something:&nbsp;
           width: 440px; height: 80px; overflow: auto">
     </div>
 
+</form>
 </body>
 </html>
 

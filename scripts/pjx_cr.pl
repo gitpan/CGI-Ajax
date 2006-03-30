@@ -35,6 +35,7 @@ my $Show_Form = sub {
 <HEAD><title>CGI::Ajax Example</title>
 </HEAD>
 <BODY>
+<form>
   Enter something:&nbsp;
   <input type="text" name="val1" id="val1" size="6" onkeyup="myfunc( ['val1','val2'], ['resultdiv'] ); return true;"><br>
 
@@ -44,6 +45,7 @@ my $Show_Form = sub {
     <hr>
     <div id="resultdiv" style="border: 1px solid black; width: 440px; height: 80px; overflow: auto">
     </div>
+</form>
 </BODY>
 </HTML>
 EOT

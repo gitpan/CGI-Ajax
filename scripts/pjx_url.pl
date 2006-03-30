@@ -21,6 +21,7 @@ my $Show_Form = sub {
 <HEAD><title>CGI::Ajax Outside URL Example</title>
 </HEAD>
 <BODY>
+<form>
   Degrees Centigrade:&nbsp;
   <input type="text" name="val1" id="val1" size="6"
     onkeyup="myfunc( ['Centigrade__' + getVal('val1')], ['val2'] );
@@ -31,6 +32,7 @@ my $Show_Form = sub {
   <input type="text" name="val2" id="val2" size="6"
     onkeyup="myfunc( ['Kelvin__' + getVal('val2')], ['val1'] );
     return true;">
+</form>
 </BODY>
 </HTML>
 EOT

@@ -381,3 +381,32 @@ Revision history for Perl module CGI::Perljax
 	'__pjxrequest'
 
 	version to 0.692
+
+0.693 (118) | bpederse | 2006-03-16
+
+  - javascript is now inserted at beggining of header, not before
+  - the eval in the javascript is gone. replaced by apply.
+  - using that apply "this" in a callback will now refer to the
+     javascript object. so this.url will give the url of the AJAX request.
+
+0.694 (119) | bcthomas | 2006-03-18
+
+	Added pjx_dynselect.pl to scripts in the dist.  This example
+	demonstrates the same thing as the pjx_combo.pl example, but it uses a
+	simple database to get values, instead of the calling script (as in
+	pjx_combo.pl).
+
+	fixed all the additional scripts that were missing '<form>' tags.
+
+	fixed pjx_combo.pl
+
+	for IE compatibility, all options must have a value, for example
+	here are the wrong way and the right way for IE...
+
+	NO:  <option> value </option>
+
+	YES: <option value='something'> displayed text </option>
+
+	fixed checkboxes - added a check script for them. 
+
+	updated some indentation in examples

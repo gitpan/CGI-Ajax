@@ -19,8 +19,3 @@ map { $hash->{$_} = chr(ord($_)+1) } @vals;
 my $json = objToJson($hash);
 
 print "var jsonObj = $json";
-
-
-
-
-
