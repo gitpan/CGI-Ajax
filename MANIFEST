@@ -26,5 +26,8 @@ scripts/pjx_loading.pl
 scripts/pjx_formDump.pl
 scripts/pjx_change_encoding.pl
 scripts/pjx_change_headers.pl
+scripts/pjx_checkbox.pl
+scripts/pjx_dynselect.pl
+scripts/pjx_from_span.pl
 Makefile.PL
 META.yml                                 Module meta-data (added by MakeMaker)

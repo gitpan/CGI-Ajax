@@ -410,3 +410,15 @@ Revision history for Perl module CGI::Perljax
 	fixed checkboxes - added a check script for them. 
 
 	updated some indentation in examples
+
+
+0.695 (131) | bpederse | 2006-05-22
+
+	two new demo scripts
+
+	can now get input from anything with .innerHTML (pjx_from_span.pl as
+	test case).
+
+	Changed the default encode function to 'escape' instead of
+	'encodeURIComponent'.  Hopefully this will alleviate many of the
+	problems users are reporting with browser functionality.

@@ -7,11 +7,11 @@ use overload '""' => 'show_javascript'; # for building web pages, so
 BEGIN {
 	use vars qw ($VERSION @ISA @METHODS);
 	@METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
-                js_encode_function cgi_header_extra );
+								js_encode_function cgi_header_extra);
 
 	CGI::Ajax->mk_accessors( @METHODS );
 
-	$VERSION     = .694;
+	$VERSION     = .695;
 }
 
 ########################################### main pod documentation begin ##
@@ -581,8 +581,10 @@ sub new {
   #$self->cgi_header_extra(""); # set cgi_header_extra to an empty string
 
   # setup a default endcoding; if you need support for international
-	# charsets, use 'escape' instead of encodeURIComponent
-  $self->js_encode_function('encodeURIComponent');
+	# charsets, use 'escape' instead of encodeURIComponent.  Due to the
+	# number of browser problems users report about scripts with a default of
+	# encodeURIComponent, we are setting the default to 'escape'
+  $self->js_encode_function('escape');
 
   if ( @_ < 2 ) {
     die "incorrect usage: must have fn=>code pairs in new\n";
@@ -774,7 +776,7 @@ function getVal(id) {
     }
     return ans;
   }
-  if(element.type=='div' || (element.tagName && element.tagName.toUpperCase()=='SPAN')){
+  if( element.value == undefined ){
     return element.innerHTML;
   }else{
     return element.value;
