@@ -11,7 +11,7 @@ BEGIN {
 
 	CGI::Ajax->mk_accessors( @METHODS );
 
-	$VERSION     = .695;
+	$VERSION     = .697;
 }
 
 ########################################### main pod documentation begin ##
@@ -736,7 +736,7 @@ function formDump(){
   for(var f = 0;f<fL;f++){
     var els = document.forms[f].elements;
     for(var e in els){
-      var tmp = els[e].id || els[e].name;
+      var tmp = (els[e].id != undefined)? els[e].id : els[e].name;
       if(typeof tmp != 'string'){continue;}
       if(tmp){ all[all.length]=tmp}
     }
@@ -752,13 +752,17 @@ function getVal(id) {
      id+'. Check that an element with name or id='+id+' exists');
      return 0;
   }
-   if(element.type == 'select-one') { return element[element.selectedIndex].value } 
+   if(element.type == 'select-one') { 
+      if(element.selectedIndex == -1) return;
+      var item = element[element.selectedIndex]; 
+      return  item.value || item.text
+   } 
   if (element.type == 'select-multiple') {
   var ans = [];
   var k =0;
     for (var i=0;i<element.length;i++) {
       if (element[i].selected || element[i].checked ) {
-        ans[k++]=element[i].value;
+        ans[k++]= element[i].value || element[i].text;
       }
     }
     return ans;
@@ -785,7 +789,11 @@ function getVal(id) {
 function fnsplit(arg) {
   var url="";
   if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()}
-  if (arg.indexOf('__') != -1) {
+  if((typeof(arg)).toLowerCase() == 'object'){
+      for(var k in arg){
+         url += '&' + k + '=' + arg[k];
+      }
+  }else if (arg.indexOf('__') != -1) {
     arga = arg.split(/__/);
     url += '&' + arga[0] +'='+ $encodefn(arga[1]);
   } else {
@@ -951,17 +959,17 @@ sub insert_js_in_head{
   if ( $self->JSDEBUG() ) {
     my $showurl=qq!<br/><div id='pjxdebugrequest'></div><br/>!;
     # find the terminal </body> so we can insert just before it
-    my @splith = $mhtml =~ /(.*)(<\s*\/\s*body\s*>)(.*)/is;
+    my @splith = $mhtml =~ /(.*)(<\s*\/\s*body[^>]*>?)(.*)/is;
     $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
   }
 
   # see if we can match on <head>
-  @shtml= $mhtml =~ /(.*)(<\s*head\s*>)(.*)/is;
+  @shtml= $mhtml =~ /(.*)(<\s*head[^>]*>?)(.*)/is;
   if ( @shtml ) {
     # yes, there's already a <head></head>, so let's insert inside it,
     # at the beginning
     $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
-  } elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
+  } elsif( @shtml= $mhtml =~ /(.*)(<\s*html[^>]*>?)(.*)/is){
     # there's no <head>, so look for the <html> tag, and insert out
     # javascript inside that tag
     $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
@@ -1077,7 +1085,7 @@ sub make_function {
   return("") if not defined $func_name;
   return("") if $func_name eq "";
   my $rv = "";
-  my $script = $0;
+  my $script = $0 || $ENV{SCRIPT_FILENAME};
   $script =~ s/.*[\/|\\](.+)$/$1/;
   my $outside_url = $self->url_list()->{ $func_name };
   my $url = defined $outside_url ? $outside_url : $script;

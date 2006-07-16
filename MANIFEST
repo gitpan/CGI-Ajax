@@ -29,5 +29,8 @@ scripts/pjx_change_headers.pl
 scripts/pjx_checkbox.pl
 scripts/pjx_dynselect.pl
 scripts/pjx_from_span.pl
+scripts/pjx_objects_2_url.pl
 Makefile.PL
+
+
 META.yml                                 Module meta-data (added by MakeMaker)

@@ -412,7 +412,7 @@ Revision history for Perl module CGI::Perljax
 	updated some indentation in examples
 
 
-0.695 (131) | bpederse | 2006-05-22
+0.697 (134) | bpederse | 2006-07-15
 
 	two new demo scripts
 
@@ -422,3 +422,15 @@ Revision history for Perl module CGI::Perljax
 	Changed the default encode function to 'escape' instead of
 	'encodeURIComponent'.  Hopefully this will alleviate many of the
 	problems users are reporting with browser functionality.
+
+
+	fixed problem with head/body with arguments (also improved regexp
+	speed)
+
+	add the ability to send in arguments via javascript objects instead of
+	using args__123, now can use {'args':123, 'args':'bcd','test':'the
+	value'}
+
+	fixed selects. see notes in previous checkin.
+
+	added $ENV{SCRIPT_FILENAME}
