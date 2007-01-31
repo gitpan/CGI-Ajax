@@ -1,5 +1,26 @@
 Revision history for Perl module CGI::Perljax
 
+0.701 (141) | bpederse | 2007-01-30
+
+added short docs about:
+
+onclick=jsfunc([{args:42}],['resultdiv'])
+as an alternative to:
+onclick=jsfunc(['args__42'],['resultdiv'])
+
+added fix for split 
+
+made changes from Peter Gordon for CGI::Application
+and added 3 of his test scripts which are 1:1 mappings
+of our test cases.
+
+added changes to getval by Kyraha
+
+always show error regardless of debug level if
+$@ is filled after eval {}
+
+---- OLDER UPDATES BELOW ---
+
 .26 Fri Aug 26 08:07:24 2005
   original version; created by ExtUtils::ModuleMaker 0.36
 

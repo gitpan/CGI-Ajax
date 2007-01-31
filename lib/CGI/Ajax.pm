@@ -2,16 +2,17 @@ package CGI::Ajax;
 use strict;
 use Data::Dumper;
 use base qw(Class::Accessor);
-use overload '""' => 'show_javascript'; # for building web pages, so
-                                        # you can just say: print $pjx
+use overload '""' => 'show_javascript';    # for building web pages, so
+                                           # you can just say: print $pjx
+
 BEGIN {
-	use vars qw ($VERSION @ISA @METHODS);
-	@METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
-								js_encode_function cgi_header_extra);
+    use vars qw ($VERSION @ISA @METHODS);
+    @METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
+      js_encode_function cgi_header_extra);
 
-	CGI::Ajax->mk_accessors( @METHODS );
+    CGI::Ajax->mk_accessors(@METHODS);
 
-	$VERSION     = .697;
+    $VERSION = .701;
 }
 
 ########################################### main pod documentation begin ##
@@ -217,7 +218,8 @@ hashref containing Key=>value pairs that CGI objects understand:
   print $pjx->build_html($cgi,\&Show_HTML,
     {-charset=>'UTF-8, -expires=>'-1d'});
 
-See L<CGI> for more header() method options.
+See L<CGI> for more header() method options.  (CGI.pm, not the 
+Perl6 CGI)
 
 That's it for the CGI::Ajax standard method.  Let's look at
 something more advanced.
@@ -444,90 +446,138 @@ of processing for the rest of your parameters.
   Called By: originating cgi script
 
 =cut
+
+sub geturl {
+    my ($self) = @_;
+    my $v;
+    $v = $self->cgi()->url() if $self->cgi()->can('url');
+    $v = $self->cgi()->query()->url()
+      if !defined $v
+      and $self->cgi()->can('query');
+    return $v;
+}
+
+sub remoteaddr {
+    my ($self) = @_;
+    my $v;
+    $v = $self->cgi()->remote_addr() if $self->cgi()->can('remote_addr');
+    $v = $self->cgi()->query()->remote_addr()
+      if !defined $v
+      and $self->cgi()->can('query');
+    return $v;
+}
+
+sub getparam {
+    my ( $self, $name ) = @_;
+    my $cgi = $self->cgi();
+    my @v   = $cgi->param($name);
+    if ( @v == 1 and !defined $v[0] ) {
+        my $query = $cgi->can('query');
+        @v = $cgi->query()->param($name) if defined $query;
+    }
+    if (wantarray) {
+        return @v;
+    }
+    return $v[0];
+}
+
+sub getHeader {
+    my ( $self, @extra ) = @_;
+    my $cgi = $self->cgi();
+
+    #    return '' if  $cgi->can('header') || $cgi->can('header_type') ;
+    return '' if $cgi->can('header_type');    # from Ajax::Application
+    return $cgi->header(@extra);
+}
+
 sub build_html {
-  my ( $self, $cgi, $html_source, $cgi_header_extra ) = @_;
-
-  if ( ref( $cgi ) =~ /CGI.*/ ) {
-    if ( $self->DEBUG() ) {
-      print STDERR "CGI::Ajax->build_html: CGI* object was received\n";
-    }
-    $self->cgi( $cgi ); # associate the cgi obj with the CGI::Ajax object
-  }
-
-  if ( defined $cgi_header_extra ) {
-    if ( $self->DEBUG() ) {
-      print STDERR "CGI::Ajax->build_html: got extra cgi header info\n";
-      if ( ref($cgi_header_extra) eq "HASH" ) {
-        foreach my $k ( keys %$cgi_header_extra ) {
-          print STDERR "\t$k => ", $cgi_header_extra->{$k}, "\n";
+    my ( $self, $cgi, $html_source, $cgi_header_extra ) = @_;
+    $self->{canQuery} = defined $cgi->can('query');    # pmg
+    if ( ref($cgi) =~ /CGI.*/ or $self->{canQuery} ) { # pmg
+        if ( $self->DEBUG() ) {
+            print STDERR "CGI::Ajax->build_html: CGI* object was received\n";
         }
-      } else {
-        print STDERR "\t$cgi_header_extra\n";
-      }
+        $self->cgi($cgi);    # associate the cgi obj with the CGI::Ajax object
     }
-    $self->cgi_header_extra( $cgi_header_extra ); 
-  }
 
-  #check if "fname" was defined in the CGI object
-  if ( defined $self->cgi()->param("fname") ) {
-    # it was, so just return the html from the handled request
-    return ( $self->handle_request() );
-  }
-  else {
-    # start with the minimum, a http header line and any extra cgi
-    # header params sent in
-    my $html = "";
-    if ( $self->cgi()->can('header') ) {
-      #$html .= $self->cgi()->header();
-      $html .= $self->cgi()->header( $self->cgi_header_extra() );
+    if ( defined $cgi_header_extra ) {
+        if ( $self->DEBUG() ) {
+            print STDERR "CGI::Ajax->build_html: got extra cgi header info\n";
+            if ( ref($cgi_header_extra) eq "HASH" ) {
+                foreach my $k ( keys %$cgi_header_extra ) {
+                    print STDERR "\t$k => ", $cgi_header_extra->{$k}, "\n";
+                }
+            }
+            else {
+                print STDERR "\t$cgi_header_extra\n";
+            }
+        }
+        $self->cgi_header_extra($cgi_header_extra);
+    }
+
+    #check if "fname" was defined in the CGI object
+    my $fnameParam = $self->getparam("fname");
+
+    if ( defined $fnameParam ) {    #pmg
+            # it was, so just return the html from the handled request
+        return ( $self->handle_request() );
     }
     else {
-      # don't have an object with a "header()" method, so just create
-      # a mimimal one
-      $html .= "Content-Type: text/html;";
-      $html .= $self->cgi_header_extra();
-      $html .= "\n\n";
-    }
 
-    # check if the user sent in a coderef for generating the html,
-    # or the actual html
-    if ( ref($html_source) eq "CODE" ) {
-      if ( $self->DEBUG() ) {
-        print STDERR "CGI::Ajax->build_html: html_source is a CODEREF\n";
-      }
-      eval { $html .= &$html_source };
-      if ($@) {
-        # there was a problem evaluating the html-generating function
-        # that was sent in, so generate an error page
-        if ( $self->cgi()->can('header') ) {
-          $html = $self->cgi()->header( $self->cgi_header_extra() );
+        # start with the minimum, a http header line and any extra cgi
+        # header params sent in
+        my $html = $self->getHeader( $self->cgi_header_extra() );
+        if ( !defined $html ) {
+
+            # don't have an object with a "header()" method, so just create
+            # a mimimal one
+            $html .= "Content-Type: text/html;";
+            $html .= $self->cgi_header_extra();
+            $html .= "\n\n";
         }
-        else {
-          # don't have an object with a "header()" method, so just create
-          # a mimimal one
-          $html = "Content-Type: text/html;";
-          $html .= $self->cgi_header_extra();
-          $html .= "\n\n";
-        }
-        $html .= qq!<html><head><title></title></head><body><h2>Problems</h2> with
+
+        # check if the user sent in a coderef for generating the html,
+        # or the actual html
+        if ( ref($html_source) eq "CODE" ) {
+            if ( $self->DEBUG() ) {
+                print STDERR
+                  "CGI::Ajax->build_html: html_source is a CODEREF\n";
+            }
+            eval { $html .= &$html_source };
+            if ($@) {
+
+                # there was a problem evaluating the html-generating function
+                # that was sent in, so generate an error page
+                $html = $self->getHeader( $self->cgi_header_extra() );
+                if ( !defined $html ) {
+
+                 # don't have an object with a "header()" method, so just create
+                 # a mimimal one
+                    $html = "Content-Type: text/html;";
+                    $html .= $self->cgi_header_extra();
+                    $html .= "\n\n";
+                }
+                $html .=
+qq!<html><head><title></title></head><body><h2>Problems</h2> with
           the html-generating function sent to CGI::Ajax
           object</body></html>!;
-        return $html;
-      }
-      $self->html($html);    # no problems, so set html
-    }
-    else {
-      # user must have sent in raw html, so add it
-      if ( $self->DEBUG() ) {
-        print STDERR "CGI::Ajax->build_html: html_source is HTML\n";
-      }
-      $self->html( $html . $html_source );
-    }
+                return $html;
+            }
+            $self->html($html);    # no problems, so set html
+        }
+        else {
 
-    # now modify the html to insert the javascript
-    $self->insert_js_in_head();
-  }
-  return $self->html();
+            # user must have sent in raw html, so add it
+            if ( $self->DEBUG() ) {
+                print STDERR "CGI::Ajax->build_html: html_source is HTML\n";
+            }
+            $self->html( $html . $html_source );
+        }
+
+        # now modify the html to insert the javascript
+        $self->insert_js_in_head();
+    }
+    return $self->html();
 }
 
 =item show_javascript()
@@ -544,71 +594,80 @@ sub build_html {
 =cut
 
 sub show_javascript {
-  my ($self) = @_;
-  my $rv = $self->show_common_js();    # show the common js
+    my ($self) = @_;
+    my $rv = $self->show_common_js();    # show the common js
 
-  # build the js for each perl function you want exported to js
-  foreach my $func ( keys %{ $self->coderef_list() }, keys %{ $self->url_list() } ) {
-    $rv .= $self->make_function($func);
-  }
-  # wrap up the return in a CDATA structure for XML compatibility
-  # (thanks Thos Davis)
-  $rv = "\n" . '//<![CDATA[' . "\n" . $rv . "\n" . '//]]>' . "\n";
-  $rv = '<script type="text/javascript">' . $rv . '</script>';
-  return $rv;
+    # build the js for each perl function you want exported to js
+    foreach
+      my $func ( keys %{ $self->coderef_list() }, keys %{ $self->url_list() } )
+    {
+        $rv .= $self->make_function($func);
+    }
+
+    # wrap up the return in a CDATA structure for XML compatibility
+    # (thanks Thos Davis)
+    $rv = "\n" . '//<![CDATA[' . "\n" . $rv . "\n" . '//]]>' . "\n";
+    $rv = '<script type="text/javascript">' . $rv . '</script>';
+    return $rv;
 }
 
 ## new
 sub new {
-  my ($class) = shift;
-  my $self = bless ({}, ref ($class) || $class);
-#  $self->SUPER::new();
-  $self->JSDEBUG(0); # turn javascript debugging off (if on,
-                     # extra info will be added to the web page output
-                     # if set to 1, then the core js will get
-                     # compressed, but the user-defined functions will
-                     # not be compressed.  If set to 2 (or anything
-                     # greater than 1 or 0), then none of the
-                     # javascript will get compressed.
-                     #
-  $self->DEBUG(0);   # turn debugging off (if on, check web logs)
+    my ($class) = shift;
+    my $self = bless( {}, ref($class) || $class );
 
-  #accessorized attributes
-  $self->coderef_list({});
-  $self->url_list({});
-  #$self->html("");
-  #$self->cgi();
-  #$self->cgi_header_extra(""); # set cgi_header_extra to an empty string
+    #  $self->SUPER::new();
+    $self->JSDEBUG(0);    # turn javascript debugging off (if on,
+                          # extra info will be added to the web page output
+                          # if set to 1, then the core js will get
+                          # compressed, but the user-defined functions will
+                          # not be compressed.  If set to 2 (or anything
+                          # greater than 1 or 0), then none of the
+                          # javascript will get compressed.
+                          #
+    $self->DEBUG(0);      # turn debugging off (if on, check web logs)
 
-  # setup a default endcoding; if you need support for international
-	# charsets, use 'escape' instead of encodeURIComponent.  Due to the
-	# number of browser problems users report about scripts with a default of
-	# encodeURIComponent, we are setting the default to 'escape'
-  $self->js_encode_function('escape');
+    #accessorized attributes
+    $self->coderef_list( {} );
+    $self->url_list(     {} );
 
-  if ( @_ < 2 ) {
-    die "incorrect usage: must have fn=>code pairs in new\n";
-  }
+    #$self->html("");
+    #$self->cgi();
+    #$self->cgi_header_extra(""); # set cgi_header_extra to an empty string
 
-  while ( @_ ) {
-    my($function_name,$code) = splice( @_, 0, 2 );
-    if ( ref( $code ) eq "CODE" ) {
-      if ( $self->DEBUG() ) {
-        print STDERR "name = $function_name, code = $code\n";
-      }
-      # add the name/code to hash
-      $self->coderef_list()->{ $function_name } = $code;
-    } elsif ( ref($code) ) {
-      die "Unsuported code block/url\n";
-    } else {
-      if ( $self->DEBUG() ) {
-        print STDERR "Setting function $function_name to url $code\n";
-      }
-      # if it's a url, it is added here
-      $self->url_list()->{ $function_name } = $code;
+    # setup a default endcoding; if you need support for international
+    # charsets, use 'escape' instead of encodeURIComponent.  Due to the
+    # number of browser problems users report about scripts with a default of
+    # encodeURIComponent, we are setting the default to 'escape'
+    $self->js_encode_function('escape');
+
+    if ( @_ < 2 ) {
+        die "incorrect usage: must have fn=>code pairs in new\n";
     }
-  }
-  return ($self);
+
+    while (@_) {
+        my ( $function_name, $code ) = splice( @_, 0, 2 );
+        if ( ref($code) eq "CODE" ) {
+            if ( $self->DEBUG() ) {
+                print STDERR "name = $function_name, code = $code\n";
+            }
+
+            # add the name/code to hash
+            $self->coderef_list()->{$function_name} = $code;
+        }
+        elsif ( ref($code) ) {
+            die "Unsuported code block/url\n";
+        }
+        else {
+            if ( $self->DEBUG() ) {
+                print STDERR "Setting function $function_name to url $code\n";
+            }
+
+            # if it's a url, it is added here
+            $self->url_list()->{$function_name} = $code;
+        }
+    }
+    return ($self);
 }
 
 ######################################################
@@ -624,33 +683,41 @@ sub new {
 #  Called By: originating cgi script, or build_html()
 #
 sub cgiobj {
-  my $self = shift;
-  # see if any values were sent in...
-  if ( @_ ) {
-    my $cgi = shift;
-    # add support for other CGI::* modules This requires that your web server
-    # be configured properly.  I can't test anything but a mod_perl2
-    # setup, so this prevents me from testing CGI::Lite,CGI::Simple, etc.
-    if ( ref($cgi) =~ /CGI.*/ ) {
-      if ( $self->DEBUG() ) {
-				print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
-      }
-      $self->{'cgi'} = $cgi;
-    } else {
-      die "CGI::Ajax -- Can't set internal CGI object to a non-CGI object ($cgi)\n";
+    my $self = shift;
+
+    # see if any values were sent in...
+    if (@_) {
+        my $cgi = shift;
+
+       # add support for other CGI::* modules This requires that your web server
+       # be configured properly.  I can't test anything but a mod_perl2
+       # setup, so this prevents me from testing CGI::Lite,CGI::Simple, etc.
+        if ( ref($cgi) =~ /CGI.*/
+            or ( $cgi->can('query') && $cgi->query =~ /CGI/ ) )
+        {    #pmg
+            if ( $self->DEBUG() ) {
+                print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
+            }
+            $self->{'cgi'} = $cgi;
+        }
+        else {
+            die
+"CGI::Ajax -- Can't set internal CGI object to a non-CGI object ($cgi)\n";
+        }
     }
-  }
-  # return the object
-  return( $self->{'cgi'} );
+
+    # return the object
+    return ( $self->{'cgi'} );
 }
 
 sub cgi {
-  my $self = shift;
-  if ( @_ ) {
-    return( $self->cgiobj( @_ ) );
-  } else {
-    return( $self->cgiobj() );
-  }
+    my $self = shift;
+    if (@_) {
+        return ( $self->cgiobj(@_) );
+    }
+    else {
+        return ( $self->cgiobj() );
+    }
 }
 
 ## # sub cgi_header_extra
@@ -661,7 +728,7 @@ sub cgi {
 ## #             the CGI object's header() method
 ## #    Returns: hashref of extra cgi header params
 ## #  Called By: originating cgi script, or build_html()
-## 
+##
 ## sub cgi_header_extra {
 ##   my $self = shift;
 ##   if ( @_ ) {
@@ -681,24 +748,26 @@ sub cgi {
 #
 
 sub create_js_setRequestHeader {
-  my $self = shift;
-  my $cgi_header_extra = $self->cgi_header_extra();
-  my $js_header_string = q{r.setRequestHeader("};
-	#$js_header_string .= $self->cgi()->header( $cgi_header_extra );
-	$js_header_string .= $self->cgi()->header();
-  $js_header_string .= q{");};
-	#if ( ref $cgi_header_extra eq "HASH" ) {
-	#	foreach my $k ( keys(%$cgi_header_extra) ) {
-	#		$js_header_string .= $self->cgi()->header($cgi_headers) 
-	#	}
-	#} else {
-  #print STDERR  $self->cgi()->header($cgi_headers) ;
-  
-	if ( $self->DEBUG() ) {
-		print STDERR "js_header_string is (", $js_header_string, ")\n";
-	}
+    my $self             = shift;
+    my $cgi_header_extra = $self->cgi_header_extra();
+    my $js_header_string = q{r.setRequestHeader("};
 
-  return($js_header_string);
+    #$js_header_string .= $self->cgi()->header( $cgi_header_extra );
+    $js_header_string .= $self->getHeader;
+    $js_header_string .= q{");};
+
+    #if ( ref $cgi_header_extra eq "HASH" ) {
+    #	foreach my $k ( keys(%$cgi_header_extra) ) {
+    #		$js_header_string .= $self->cgi()->header($cgi_headers)
+    #	}
+    #} else {
+    #print STDERR  $self->cgi()->header($cgi_headers) ;
+
+    if ( $self->DEBUG() ) {
+        print STDERR "js_header_string is (", $js_header_string, ")\n";
+    }
+
+    return ($js_header_string);
 }
 
 # sub show_common_js()
@@ -711,14 +780,15 @@ sub create_js_setRequestHeader {
 #
 
 sub show_common_js {
-  my $self = shift;
-  my $encodefn = $self->js_encode_function();
-  my $decodefn = $encodefn;
-  $decodefn =~ s/^(en)/de/;
-  $decodefn =~ s/^(esc)/unesc/;
-  #my $request_header_str = $self->create_js_setRequestHeader();
-  my $request_header_str = "";
-  my $rv = <<EOT;
+    my $self     = shift;
+    my $encodefn = $self->js_encode_function();
+    my $decodefn = $encodefn;
+    $decodefn =~ s/^(en)/de/;
+    $decodefn =~ s/^(esc)/unesc/;
+
+    #my $request_header_str = $self->create_js_setRequestHeader();
+    my $request_header_str = "";
+    my $rv                 = <<EOT;
 var ajax = [];
 function pjx(args,fname,method) {
   this.target=args[1];
@@ -746,20 +816,29 @@ function formDump(){
 function getVal(id) {
   if (id.constructor == Function ) { return id(); }
   if (typeof(id)!= 'string') { return id; }
-  var element = document.getElementById(id) || document.forms[0].elements[id];
-  if(!element){
-     alert('ERROR: Cant find HTML element with id or name: ' +
-     id+'. Check that an element with name or id='+id+' exists');
-     return 0;
+
+  var element = document.getElementById(id);
+  if( !element ) {
+    for( var i=0; i<document.forms.length; i++ ){
+      element = document.forms[i].elements[id];
+      if( element ) break;
+    }
+    if( element && !element.type ) element = element[0];
   }
-   if(element.type == 'select-one') { 
-      if(element.selectedIndex == -1) return;
-      var item = element[element.selectedIndex]; 
-      return  item.value || item.text
-   } 
-  if (element.type == 'select-multiple') {
-  var ans = [];
-  var k =0;
+  if(!element){
+    alert('ERROR: Cant find HTML element with id or name: ' +
+    id+'. Check that an element with name or id='+id+' exists');
+    return 0;
+  }
+
+  if(element.type == 'select-one') {
+    if(element.selectedIndex == -1) return;
+    var item = element[element.selectedIndex];
+    return  item.value || item.text;
+  }
+  if(element.type == 'select-multiple') {
+    var ans = [];
+    var k =0;
     for (var i=0;i<element.length;i++) {
       if (element[i].selected || element[i].checked ) {
         ans[k++]= element[i].value || element[i].text;
@@ -767,14 +846,13 @@ function getVal(id) {
     }
     return ans;
   }
-    
   if(element.type == 'radio' || element.type == 'checkbox'){
     var ans =[];
     var elms = document.getElementsByTagName('input');
-    var endk = elms.length;
+    var endk = elms.length ;
     var i =0;
     for(var k=0;k<endk;k++){
-      if(elms[k].type== element.type && elms[k].checked && elms[k].id==id){
+      if(elms[k].type== element.type && elms[k].checked && (elms[k].id==id||elms[k].name==id)){
         ans[i++]=elms[k].value;
       }
     }
@@ -910,11 +988,11 @@ function jsdebug(){
 
 EOT
 
-  if ( $self->JSDEBUG() <= 1 ) {
-    $rv = $self->compress_js($rv);
-  }
+    if ( $self->JSDEBUG() <= 1 ) {
+        $rv = $self->compress_js($rv);
+    }
 
-  return($rv);
+    return ($rv);
 }
 
 # sub compress_js()
@@ -928,14 +1006,13 @@ EOT
 #
 
 sub compress_js {
-  my($self,$js) = @_;
-  return if not defined $js;
-  return if $js eq "";
-  $js =~ s/\n//g;   # drop newlines
-  $js =~ s/\s+/ /g; # replace 1+ spaces with just one space
-  return $js;
+    my ( $self, $js ) = @_;
+    return if not defined $js;
+    return if $js eq "";
+    $js =~ s/\n//g;      # drop newlines
+    $js =~ s/\s+/ /g;    # replace 1+ spaces with just one space
+    return $js;
 }
-
 
 # sub insert_js_in_head()
 #
@@ -949,39 +1026,45 @@ sub compress_js {
 #  Called By: build_html()
 #
 
-sub insert_js_in_head{
-  my $self = shift;
-  my $mhtml = $self->html();
-  my $newhtml;
-  my @shtml;
-  my $js = $self->show_javascript();
+sub insert_js_in_head {
+    my $self  = shift;
+    my $mhtml = $self->html();
+    my $newhtml;
+    my @shtml;
+    my $js = $self->show_javascript();
 
-  if ( $self->JSDEBUG() ) {
-    my $showurl=qq!<br/><div id='pjxdebugrequest'></div><br/>!;
-    # find the terminal </body> so we can insert just before it
-    my @splith = $mhtml =~ /(.*)(<\s*\/\s*body[^>]*>?)(.*)/is;
-    $mhtml = $splith[0].$showurl.$splith[1].$splith[2];
-  }
+    if ( $self->JSDEBUG() ) {
+        my $showurl = qq!<br/><div id='pjxdebugrequest'></div><br/>!;
 
-  # see if we can match on <head>
-  @shtml= $mhtml =~ /(.*)(<\s*head[^>]*>?)(.*)/is;
-  if ( @shtml ) {
-    # yes, there's already a <head></head>, so let's insert inside it,
-    # at the beginning
-    $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
-  } elsif( @shtml= $mhtml =~ /(.*)(<\s*html[^>]*>?)(.*)/is){
-    # there's no <head>, so look for the <html> tag, and insert out
-    # javascript inside that tag
-    $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
-  } else {
-    $newhtml .= "<html><head>";
-    $newhtml .= $js;
-    $newhtml .= "</head><body>";
-    $newhtml .= "No head/html tags, nowhere to insert.  Returning javascript anyway<br>";
-    $newhtml .= "</body></html>";
-  }
-  $self->html($newhtml);
-  return;
+        # find the terminal </body> so we can insert just before it
+        my @splith = $mhtml =~ /(.*)(<\s*\/\s*body[^>]*>?)(.*)/is;
+        $mhtml = $splith[0] . $showurl . $splith[1] . $splith[2];
+    }
+
+    # see if we can match on <head>
+    @shtml = $mhtml =~ /(.*)(<\s*head[^>]*>?)(.*)/is;
+    if (@shtml) {
+
+        # yes, there's already a <head></head>, so let's insert inside it,
+        # at the beginning
+        $newhtml = $shtml[0] . $shtml[1] . $js . $shtml[2];
+    }
+    elsif ( @shtml = $mhtml =~ /(.*)(<\s*html[^>]*>?)(.*)/is ) {
+
+        # there's no <head>, so look for the <html> tag, and insert out
+        # javascript inside that tag
+        $newhtml = $shtml[0] . $shtml[1] . $js . $shtml[2];
+    }
+    else {
+        $newhtml .= "<html><head>";
+        $newhtml .= $js;
+        $newhtml .= "</head><body>";
+        $newhtml .=
+"No head/html tags, nowhere to insert.  Returning javascript anyway<br>";
+        $newhtml .= "</body></html>";
+    }
+    $self->html($newhtml);
+    return;
 }
 
 # sub handle_request()
@@ -997,76 +1080,78 @@ sub insert_js_in_head{
 #
 
 sub handle_request {
-  my ($self) = shift;
+    my ($self) = shift;
 
-  my $result; # $result takes the output of the function, if it's an
-              # array split on __pjx__
-  my @other = (); # array for catching extra parameters
+    my $result;    # $result takes the output of the function, if it's an
+                   # array split on __pjx__
+    my @other = ();    # array for catching extra parameters
 
-  # we need to access "fname" in the form from the web page, so make
-  # sure there is a CGI object defined
-  return undef unless defined $self->cgi();
+    # we need to access "fname" in the form from the web page, so make
+    # sure there is a CGI object defined
+    return undef unless defined $self->cgi();
 
-  my $rv = "";
-  if ( $self->cgi()->can('header') ) {
-    $rv = $self->cgi()->header( $self->cgi_header_extra() );
-  } else {
-    # don't have an object with a "header()" method, so just create
-    # a mimimal one
-    $rv = "Content-Type: text/html;";
-    # TODO: 
-    $rv .= $self->cgi_header_extra();
-    $rv .= "\n\n";
-  }
+    my $rv = $self->getHeader( $self->cgi_header_extra() );
+    if ( !defined $rv ) {
 
-  # get the name of the function
-  my $func_name = $self->cgi()->param("fname");
+        # don't have an object with a "header()" method, so just create
+        # a mimimal one
+        $rv = "Content-Type: text/html;";
 
-  # check if the function name was created
-  if ( defined $self->coderef_list()->{$func_name} ) {
-    my $code = $self->coderef_list()->{$func_name};
-
-    # eval the code from the coderef, and append the output to $rv
-    if ( ref($code) eq "CODE" ) {
-      eval { ($result, @other) = $code->( $self->cgi()->param("args") ) };
-
-      if ($@) {
-        # see if the eval caused and error and report it
-        # Should we be more severe and die?
-        if ( $self->DEBUG() ) {
-          print STDERR "Problem with code: $@\n";
-        }
-      }
-
-      if( @other ) {
-          $rv .= join( "__pjx__", ($result, @other) );
-          if ( $self->DEBUG() ) {
-            print STDERR "rv = $rv\n";
-          }
-      } else {
-        if ( defined $result ) {
-          $rv .= $result;
-        }
-      }
-
-    } # end if ref = CODE
-  } else {
-    # # problems with the URL, return a CGI rrror
-    print STDERR "POSSIBLE SECURITY INCIDENT! Browser from ", $self->cgi()->remote_addr();
-    print STDERR "\trequested URL: ", $self->cgi()->url();
-    print STDERR "\tfname request: ", $self->cgi()->param('fname');
-    print STDERR " -- returning Bad Request status 400\n";
-    if ( $self->cgi()->can('header') ) {
-      return($self->cgi()->header( -status=>'400' ));
-    } else {
-      # don't have an object with a "header()" method, so just create
-      # a mimimal one with 400 error
-      $rv = "Status: 400\nContent-Type: text/html;\n\n";
+        # TODO:
+        $rv .= $self->cgi_header_extra();
+        $rv .= "\n\n";
     }
-  }
-  return $rv;
-}
 
+    # get the name of the function
+    my $func_name = $self->getparam("fname");    #pmg
+         # check if the function name was created
+    if ( defined $self->coderef_list()->{$func_name} ) {
+        my $code = $self->coderef_list()->{$func_name};
+
+        # eval the code from the coderef, and append the output to $rv
+        if ( ref($code) eq "CODE" ) {
+            my @args = $self->getparam("args");    #pmg
+            eval { ( $result, @other ) = $code->(@args) };    #pmg
+
+            if ($@) {
+
+                # see if the eval caused and error and report it
+                # Should we be more severe and die?
+                print STDERR "Problem with code: $@\n";
+            }
+
+            if (@other) {
+                $rv .= join( "__pjx__", ( $result, @other ) );
+                if ( $self->DEBUG() ) {
+                    print STDERR "rv = $rv\n";
+                }
+            }
+            else {
+                if ( defined $result ) {
+                    $rv .= $result;
+                }
+            }
+
+        }    # end if ref = CODE
+    }
+    else {
+
+        # # problems with the URL, return a CGI rrror
+        print STDERR "POSSIBLE SECURITY INCIDENT! Browser from ",
+          $self->remoteaddr();
+        print STDERR "\trequested URL: ", $self->geturl();
+        print STDERR "\tfname request: ", $self->getparam('fname');
+        print STDERR " -- returning Bad Request status 400\n";
+        my $header = $self->getHeader( -status => '400' );
+        if ( !defined $header ) {
+
+            # don't have an object with a "header()" method, so just create
+            # a mimimal one with 400 error
+            $rv = "Status: 400\nContent-Type: text/html;\n\n";
+        }
+    }
+    return $rv;
+}
 
 # sub make_function()
 #
@@ -1081,23 +1166,25 @@ sub handle_request {
 #
 
 sub make_function {
-  my ($self, $func_name ) = @_;
-  return("") if not defined $func_name;
-  return("") if $func_name eq "";
-  my $rv = "";
-  my $script = $0 || $ENV{SCRIPT_FILENAME};
-  $script =~ s/.*[\/|\\](.+)$/$1/;
-  my $outside_url = $self->url_list()->{ $func_name };
-  my $url = defined $outside_url ? $outside_url : $script;
-  if ($url =~ /\?/) { $url.='&'; } else {$url.='?'}
-  $url = "'$url'";
-  my $jsdebug = "";
-  if ( $self->JSDEBUG()) {
-    $jsdebug = "jsdebug()";
-  }
+    my ( $self, $func_name ) = @_;
+    return ("") if not defined $func_name;
+    return ("") if $func_name eq "";
+    my $rv = "";
+    my $script = $0 || $ENV{SCRIPT_FILENAME};
+    $script =~ s/.*[\/|\\](.+)$/$1/;
+    my $outside_url = $self->url_list()->{$func_name};
+    my $url = defined $outside_url ? $outside_url : $script;
+    if ( $url =~ /\?/ ) { $url .= '&'; }
+    else { $url .= '?' }
+    $url = "'$url'";
+    my $jsdebug = "";
 
-  #create the javascript text
-  $rv .= <<EOT;
+    if ( $self->JSDEBUG() ) {
+        $jsdebug = "jsdebug()";
+    }
+
+    #create the javascript text
+    $rv .= <<EOT;
 function $func_name() {
   var args = $func_name.arguments;
   for( var i=0; i<args[0].length;i++ ) {
@@ -1111,10 +1198,10 @@ function $func_name() {
 }
 EOT
 
-  if ( not $self->JSDEBUG() ) {
-    $rv = $self->compress_js($rv);
-  }
-  return $rv;
+    if ( not $self->JSDEBUG() ) {
+        $rv = $self->compress_js($rv);
+    }
+    return $rv;
 }
 
 =item register()
@@ -1128,16 +1215,19 @@ EOT
 =cut
 
 sub register {
-  my ( $self, $fn, $coderef ) = @_;
-  # coderef_list() is a Class::Accessor function
-  # url_list() is a Class::Accessor function
-  if ( ref( $coderef ) eq "CODE" ) {
-    $self->coderef_list()->{$fn} = $coderef;
-  } elsif ( ref($coderef) ) {
-    die "Unsupported code/url type - error\n";
-  } else {
-    $self->url_list()->{$fn} = $coderef;
-  }
+    my ( $self, $fn, $coderef ) = @_;
+
+    # coderef_list() is a Class::Accessor function
+    # url_list() is a Class::Accessor function
+    if ( ref($coderef) eq "CODE" ) {
+        $self->coderef_list()->{$fn} = $coderef;
+    }
+    elsif ( ref($coderef) ) {
+        die "Unsupported code/url type - error\n";
+    }
+    else {
+        $self->url_list()->{$fn} = $coderef;
+    }
 }
 
 =item JSDEBUG()
@@ -1187,6 +1277,11 @@ Check out the news/discussion/bugs lists at our homepage:
   Brian C. Thomas     Brent Pedersen
   CPAN ID: BCT
   bct.x42@gmail.com   bpederse@gmail.com
+
+  significant contribution by:
+      Peter Gordon <peter@pg-consultants.com> # CGI::Application + scripts
+      Kyraha  <kyraha@gmail.com>  # new getVal() to handle check boxes
+      and name= for multiple forms
 
 =head1 A NOTE ABOUT THE MODULE NAME
 
