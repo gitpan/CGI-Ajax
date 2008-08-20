@@ -1,9 +1,9 @@
 --- #YAML:1.0
 name:                CGI-Ajax
-version:             0.701
+version:             0.703
 abstract:            CGI::Ajax
 license:             ~
-generated_by:        ExtUtils::MakeMaker version 6.31
+generated_by:        ExtUtils::MakeMaker version 6.36
 distribution_type:   module
 requires:     
     CGI:                           0

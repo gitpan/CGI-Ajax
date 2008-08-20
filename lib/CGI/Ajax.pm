@@ -7,12 +7,12 @@ use overload '""' => 'show_javascript';    # for building web pages, so
 
 BEGIN {
     use vars qw ($VERSION @ISA @METHODS);
-    @METHODS = qw(url_list coderef_list DEBUG JSDEBUG html
-      js_encode_function cgi_header_extra);
+    @METHODS = qw(url_list coderef_list CACHE DEBUG JSDEBUG html
+      js_encode_function cgi_header_extra skip_header fname);
 
     CGI::Ajax->mk_accessors(@METHODS);
 
-    $VERSION = .701;
+    $VERSION = .703;
 }
 
 ########################################### main pod documentation begin ##
@@ -30,7 +30,6 @@ applications
 
   my $cgi = new CGI;
   my $pjx = new CGI::Ajax( 'exported_func' => \&perl_func );
-
   print $pjx->build_html( $cgi, \&Show_HTML);
 
   sub perl_func {
@@ -54,6 +53,17 @@ applications
   EOHTML
     return $html;
   }
+
+When you use CGI::Ajax within Applications that send their own header information,
+you can skip the header:
+
+  my $pjx = new CGI::Ajax(
+    'exported_func' => \&perl_func,
+    'skip_header'   => 1,
+  );
+  $pjx->skip_header(1);
+  
+  print $pjx->build_html( $cgi, \&Show_HTML);
 
 I<There are several fully-functional examples in the 'scripts/'
 directory of the distribution.>
@@ -411,6 +421,8 @@ number in it.  This will prevent a browser from caching your request.
 The extra param is called pjxrand, and won't interfere with the order
 of processing for the rest of your parameters.
 
+Also see the CACHE() method of changing the default cache behavior.
+
 =head1 METHODS
 
 =cut
@@ -484,6 +496,7 @@ sub getparam {
 sub getHeader {
     my ( $self, @extra ) = @_;
     my $cgi = $self->cgi();
+    return '' if $self->skip_header;
 
     #    return '' if  $cgi->can('header') || $cgi->can('header_type') ;
     return '' if $cgi->can('header_type');    # from Ajax::Application
@@ -516,7 +529,7 @@ sub build_html {
     }
 
     #check if "fname" was defined in the CGI object
-    my $fnameParam = $self->getparam("fname");
+    my $fnameParam = $self->getparam($self->fname());
 
     if ( defined $fnameParam ) {    #pmg
             # it was, so just return the html from the handled request
@@ -527,7 +540,7 @@ sub build_html {
         # start with the minimum, a http header line and any extra cgi
         # header params sent in
         my $html = $self->getHeader( $self->cgi_header_extra() );
-        if ( !defined $html ) {
+        if ( !defined $html and $self->skip_header == 0 ) {
 
             # don't have an object with a "header()" method, so just create
             # a mimimal one
@@ -549,7 +562,7 @@ sub build_html {
                 # there was a problem evaluating the html-generating function
                 # that was sent in, so generate an error page
                 $html = $self->getHeader( $self->cgi_header_extra() );
-                if ( !defined $html ) {
+                if ( !defined $html and $self->skip_header == 0 ) {
 
                  # don't have an object with a "header()" method, so just create
                  # a mimimal one
@@ -617,6 +630,7 @@ sub new {
     my $self = bless( {}, ref($class) || $class );
 
     #  $self->SUPER::new();
+    $self->fname("fname");# default parameter for exported function name
     $self->JSDEBUG(0);    # turn javascript debugging off (if on,
                           # extra info will be added to the web page output
                           # if set to 1, then the core js will get
@@ -626,6 +640,9 @@ sub new {
                           # javascript will get compressed.
                           #
     $self->DEBUG(0);      # turn debugging off (if on, check web logs)
+    $self->CACHE(1);      # default behavior is to allow cache of content
+                          # which can be explicitly switched off by passing
+                          # NO_CACHE in the arg list
 
     #accessorized attributes
     $self->coderef_list( {} );
@@ -643,10 +660,17 @@ sub new {
 
     if ( @_ < 2 ) {
         die "incorrect usage: must have fn=>code pairs in new\n";
+        
     }
 
     while (@_) {
         my ( $function_name, $code ) = splice( @_, 0, 2 );
+
+        if( $function_name eq 'skip_header' ){
+            $self->skip_header( $code );
+            next;
+        }
+
         if ( ref($code) eq "CODE" ) {
             if ( $self->DEBUG() ) {
                 print STDERR "name = $function_name, code = $code\n";
@@ -781,6 +805,7 @@ sub create_js_setRequestHeader {
 
 sub show_common_js {
     my $self     = shift;
+    my $fname    = $self->fname();
     my $encodefn = $self->js_encode_function();
     my $decodefn = $encodefn;
     $decodefn =~ s/^(en)/de/;
@@ -866,7 +891,7 @@ function getVal(id) {
 }
 function fnsplit(arg) {
   var url="";
-  if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()}
+  if(arg=='NO_CACHE'){cache = 0; return "";};
   if((typeof(arg)).toLowerCase() == 'object'){
       for(var k in arg){
          url += '&' + k + '=' + arg[k];
@@ -877,6 +902,7 @@ function fnsplit(arg) {
   } else {
     var res = getVal(arg) || '';
     if(res.constructor != Array){ res = [res] }
+    else if( res.length == 0 ) { res = [ '' ] }
     for(var i=0;i<res.length;i++) {
       url += '&args=' + $encodefn(res[i]) + '&' + arg + '=' + $encodefn(res[i]);
     }
@@ -888,6 +914,7 @@ pjx.prototype =  {
   send2perl : function(){
     var r = this.r;
     var dt = this.target;
+    if (dt==undefined) { return true; }
     this.pjxInitialized(dt);
     var url=this.url;
     var postdata;
@@ -923,7 +950,9 @@ pjx.prototype =  {
         var div = document.getElementById(dt[i]);
         if (div.type =='text' || div.type=='textarea' || div.type=='hidden' ) {
           div.value=data[i];
-        } else{
+        } else if (div.type =='checkbox') {
+          div.checked=data[i];
+        } else {
           div.innerHTML = data[i];
         }
       }
@@ -935,7 +964,7 @@ pjx.prototype =  {
 
   getURL : function(fname) {
       var args = this.args;
-      var url= 'fname=' + fname;
+      var url= '$fname=' + fname;
       for (var i=0;i<args.length;i++) {
         url=url + args[i];
       }
@@ -981,9 +1010,9 @@ function jsdebug(){
     var tmp = document.getElementById('pjxdebugrequest').innerHTML = "<br><pre>";
     for( var i=0; i < ajax.length; i++ ) {
       tmp += '<a href= '+ ajax[i].url +' target=_blank>' +
-      decodeURI(ajax[i].url) + ' </a><br>';
+      decodeURI(ajax[i].url) + ' <' + '/a><br>';
     }
-    document.getElementById('pjxdebugrequest').innerHTML = tmp + "</pre>";
+    document.getElementById('pjxdebugrequest').innerHTML = tmp + "<" + "/pre>";
 }
 
 EOT
@@ -1020,7 +1049,7 @@ sub compress_js {
 #             the ajax javascript code in the <script></script> section,
 #             or if no such section exists, then it creates it.  If
 #             JSDEBUG is set, then an extra div will be added and the
-#             url wil be desplayed as a link
+#             url will be displayed as a link
 #  Arguments: none
 #    Returns: none
 #  Called By: build_html()
@@ -1091,7 +1120,7 @@ sub handle_request {
     return undef unless defined $self->cgi();
 
     my $rv = $self->getHeader( $self->cgi_header_extra() );
-    if ( !defined $rv ) {
+    if ( !defined $rv and $self->skip_header == 0 ) {
 
         # don't have an object with a "header()" method, so just create
         # a mimimal one
@@ -1103,7 +1132,7 @@ sub handle_request {
     }
 
     # get the name of the function
-    my $func_name = $self->getparam("fname");    #pmg
+    my $func_name = $self->getparam($self->fname());    #pmg
          # check if the function name was created
     if ( defined $self->coderef_list()->{$func_name} ) {
         my $code = $self->coderef_list()->{$func_name};
@@ -1140,7 +1169,7 @@ sub handle_request {
         print STDERR "POSSIBLE SECURITY INCIDENT! Browser from ",
           $self->remoteaddr();
         print STDERR "\trequested URL: ", $self->geturl();
-        print STDERR "\tfname request: ", $self->getparam('fname');
+        print STDERR "\tfname request: ", $self->getparam($self->fname());
         print STDERR " -- returning Bad Request status 400\n";
         my $header = $self->getHeader( -status => '400' );
         if ( !defined $header ) {
@@ -1183,16 +1212,22 @@ sub make_function {
         $jsdebug = "jsdebug()";
     }
 
+    my $cache = $self->CACHE();
+
     #create the javascript text
     $rv .= <<EOT;
 function $func_name() {
   var args = $func_name.arguments;
+  var cache = $cache;
   for( var i=0; i<args[0].length;i++ ) {
     args[0][i] = fnsplit(args[0][i]);
   }
   var l = ajax.length;
   ajax[l]= new pjx(args,"$func_name",args[2]);
   ajax[l].url = $url + ajax[l].url;
+  if ( cache == 0 ) {
+    ajax[l].url = ajax[l].url + '&pjxrand=' + Math.random();
+  }
   ajax[l].send2perl();
   $jsdebug;
 }
@@ -1230,6 +1265,19 @@ sub register {
     }
 }
 
+=item fname()
+
+    Purpose: Overrides the default parameter name used for
+             passing an exported function name. Default value
+             is "fname".
+
+  Arguments: fname("new_name"); # sets the new parameter name
+             The overriden fname should be consistent throughout 
+             the entire application. Otherwise results are unpredicted.
+
+    Returns: With no parameters fname() returns the current fname name
+
+
 =item JSDEBUG()
 
     Purpose: Show the AJAX URL that is being generated, and stop
@@ -1258,6 +1306,15 @@ sub register {
              STDERR
   Called By: $pjx->DEBUG(1) # where $pjx is a CGI::Ajax object;
 
+=item CACHE()
+
+    Purpose: Alter the default result caching behavior.
+  Arguments: CACHE(0); # effectively the same as having NO_CACHE passed in every call
+    Returns: A change in the behavior of build_html such that the javascript
+             produced will always act as if the NO_CACHE argument is passed,
+             regardless of its presence.
+  Called By: $pjx->CACHE(0) # where $pjx is a CGI::Ajax object;
+
 =back
 
 =head1 BUGS
@@ -1280,8 +1337,17 @@ Check out the news/discussion/bugs lists at our homepage:
 
   significant contribution by:
       Peter Gordon <peter@pg-consultants.com> # CGI::Application + scripts
-      Kyraha  <kyraha@gmail.com>  # new getVal() to handle check boxes
-      and name= for multiple forms
+      Kyraha  http://michael.kyraha.com/      # new getVal() to handle check
+                                              # boxes
+                                              # and name= for multiple forms
+                                              # override fname parameter name
+      Jan Franczak <jan.franczak@gmail.com>   # CACHE support
+  others:
+      RENEEB <RENEEB [...] cpan.org> 
+      stefan.scherer
+      RBS
+      Andrew
+
 
 =head1 A NOTE ABOUT THE MODULE NAME
 
