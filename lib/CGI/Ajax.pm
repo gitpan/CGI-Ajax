@@ -12,7 +12,7 @@ BEGIN {
 
     CGI::Ajax->mk_accessors(@METHODS);
 
-    $VERSION = .703;
+    $VERSION = .705;
 }
 
 ########################################### main pod documentation begin ##
@@ -462,20 +462,20 @@ Also see the CACHE() method of changing the default cache behavior.
 sub geturl {
     my ($self) = @_;
     my $v;
-    $v = $self->cgi()->url() if $self->cgi()->can('url');
+    $v = $self->cgi()->url() if $self->cgi()->isa('CGI');
     $v = $self->cgi()->query()->url()
       if !defined $v
-      and $self->cgi()->can('query');
+      and $self->cgi()->isa('CGI::Application');
     return $v;
 }
 
 sub remoteaddr {
     my ($self) = @_;
     my $v;
-    $v = $self->cgi()->remote_addr() if $self->cgi()->can('remote_addr');
+    $v = $self->cgi()->remote_addr() if $self->cgi()->isa('CGI');
     $v = $self->cgi()->query()->remote_addr()
       if !defined $v
-      and $self->cgi()->can('query');
+      and $self->cgi()->isa('CGI::Application');
     return $v;
 }
 
@@ -484,7 +484,7 @@ sub getparam {
     my $cgi = $self->cgi();
     my @v   = $cgi->param($name);
     if ( @v == 1 and !defined $v[0] ) {
-        my $query = $cgi->can('query');
+        my $query = $cgi->isa('CGI::Application');
         @v = $cgi->query()->param($name) if defined $query;
     }
     if (wantarray) {
@@ -498,14 +498,14 @@ sub getHeader {
     my $cgi = $self->cgi();
     return '' if $self->skip_header;
 
-    #    return '' if  $cgi->can('header') || $cgi->can('header_type') ;
-    return '' if $cgi->can('header_type');    # from Ajax::Application
+    #    return '' if  $cgi->isa('header') || $cgi->isa('header_type') ;
+    return '' if $cgi->isa('CGI::Application');    # from Ajax::Application
     return $cgi->header(@extra);
 }
 
 sub build_html {
     my ( $self, $cgi, $html_source, $cgi_header_extra ) = @_;
-    $self->{canQuery} = defined $cgi->can('query');    # pmg
+    $self->{canQuery} = defined $cgi->isa('CGI::Application');    # pmg
     if ( ref($cgi) =~ /CGI.*/ or $self->{canQuery} ) { # pmg
         if ( $self->DEBUG() ) {
             print STDERR "CGI::Ajax->build_html: CGI* object was received\n";
@@ -717,7 +717,7 @@ sub cgiobj {
        # be configured properly.  I can't test anything but a mod_perl2
        # setup, so this prevents me from testing CGI::Lite,CGI::Simple, etc.
         if ( ref($cgi) =~ /CGI.*/
-            or ( $cgi->can('query') && $cgi->query =~ /CGI/ ) )
+            or ( $cgi->isa('CGI::Application') && $cgi->query =~ /CGI/ ) )
         {    #pmg
             if ( $self->DEBUG() ) {
                 print STDERR "cgiobj() received a CGI-like object ($cgi)\n";
@@ -1337,11 +1337,10 @@ Check out the news/discussion/bugs lists at our homepage:
 
   significant contribution by:
       Peter Gordon <peter@pg-consultants.com> # CGI::Application + scripts
-      Kyraha  http://michael.kyraha.com/      # new getVal() to handle check
-                                              # boxes
-                                              # and name= for multiple forms
-                                              # override fname parameter name
+      Kyraha  http://michael.kyraha.com/      # getVal(), multiple forms
       Jan Franczak <jan.franczak@gmail.com>   # CACHE support
+      Shibi NS                                # use ->isa instead of ->can
+     
   others:
       RENEEB <RENEEB [...] cpan.org> 
       stefan.scherer
