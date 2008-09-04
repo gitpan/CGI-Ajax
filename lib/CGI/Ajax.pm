@@ -12,7 +12,7 @@ BEGIN {
 
     CGI::Ajax->mk_accessors(@METHODS);
 
-    $VERSION = .705;
+    $VERSION = .706;
 }
 
 ########################################### main pod documentation begin ##
@@ -498,7 +498,7 @@ sub getHeader {
     my $cgi = $self->cgi();
     return '' if $self->skip_header;
 
-    #    return '' if  $cgi->isa('header') || $cgi->isa('header_type') ;
+    #    return '' if  $cgi->isa('CGI') || $cgi->isa('CGI::Application') ;
     return '' if $cgi->isa('CGI::Application');    # from Ajax::Application
     return $cgi->header(@extra);
 }
