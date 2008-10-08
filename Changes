@@ -1,23 +1,64 @@
 Revision history for Perl module CGI::Perljax
 
+0.707 (154) | Jan Franczak | 2008-10-07
+
+ Fixed an issue in the declaration of the javascript cache variable as a
+ local variable in the exported methods.  This was causing NO_CACHE to
+ never generate the pjxrand in the query string.
+
+ Changed the code so that cache is set as a global javascript variable.
+
+ Thanks to Shivanandham Karunanithi for identifying this.
+
+0.706 (153) | Shibi Ns | 2008-09-04
+
+ Wrongly coded one line of code for the fix 0.705
+
+ Changed this:
+
+ #    return '' if  $cgi->isa('header') || $cgi->isa('header_type') ;
+
+ To this:
+
+ #    return '' if  $cgi->isa('CGI') || $cgi->isa('CGI::Application') ;
+
+0.705 (152) | Shibi Ns | 2008-08-26
+
+ Changed function call from "can" to "isa" in order this to work with new 
+ version of CGI 3.37. CGI 3.37 has overloaded the function "can" which causes
+ some of the functions to fail.
+
+0.703 (150) | Jan Franczak | 2008-08-20
+     
+ Added support for CACHE() which allows default behaviour of disabling page
+ cache.
+
+ Added fname() support to allow the names of exported functions to be
+ specified.
+
+ Added skip_header support to prevent two headers being produced for
+ applications producing their own headers.
+
+ Two new test scripts.
+
 0.701 (141) | bpederse | 2007-01-30
 
-added short docs about:
+ added short docs about:
 
-onclick=jsfunc([{args:42}],['resultdiv'])
-as an alternative to:
-onclick=jsfunc(['args__42'],['resultdiv'])
+ onclick=jsfunc([{args:42}],['resultdiv'])
+ as an alternative to:
+ onclick=jsfunc(['args__42'],['resultdiv'])
 
-added fix for split 
+ added fix for split 
 
-made changes from Peter Gordon for CGI::Application
-and added 3 of his test scripts which are 1:1 mappings
-of our test cases.
+ made changes from Peter Gordon for CGI::Application
+ and added 3 of his test scripts which are 1:1 mappings
+ of our test cases.
 
-added changes to getval by Kyraha
+ added changes to getval by Kyraha
 
-always show error regardless of debug level if
-$@ is filled after eval {}
+ always show error regardless of debug level if
+ $@ is filled after eval {}
 
 ---- OLDER UPDATES BELOW ---
 

@@ -12,7 +12,7 @@ BEGIN {
 
     CGI::Ajax->mk_accessors(@METHODS);
 
-    $VERSION = .706;
+    $VERSION = .707;
 }
 
 ########################################### main pod documentation begin ##
@@ -815,6 +815,8 @@ sub show_common_js {
     my $request_header_str = "";
     my $rv                 = <<EOT;
 var ajax = [];
+var cache;
+
 function pjx(args,fname,method) {
   this.target=args[1];
   this.args=args[0];
@@ -1218,7 +1220,7 @@ sub make_function {
     $rv .= <<EOT;
 function $func_name() {
   var args = $func_name.arguments;
-  var cache = $cache;
+  cache = $cache;
   for( var i=0; i<args[0].length;i++ ) {
     args[0][i] = fnsplit(args[0][i]);
   }
