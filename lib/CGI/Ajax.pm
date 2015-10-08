@@ -852,6 +852,11 @@ function getVal(id) {
     }
     if( element && !element.type ) element = element[0];
   }
+  
+  if(!element){
+      element = document.getElemenstByName(id);
+  }
+  
   if(!element){
     alert('ERROR: Cant find HTML element with id or name: ' +
     id+'. Check that an element with name or id='+id+' exists');
